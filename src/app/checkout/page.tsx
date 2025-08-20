@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useOrders } from '@/contexts/OrderContext';
+import { useAuth } from '@/contexts/AuthContext';
 import CheckoutForm from '@/components/CheckoutForm';
 import PaymentForm from '@/components/PaymentForm';
 import Link from 'next/link';
@@ -23,6 +25,8 @@ interface CustomerInfo {
 
 export default function CheckoutPage() {
   const { state, getTotalPrice, clearCart } = useCart();
+  const { addOrder } = useOrders();
+  const { state: authState } = useAuth();
   const [step, setStep] = useState<'customer' | 'payment'>('customer');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,10 +60,35 @@ export default function CheckoutPage() {
   };
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
-    // TODO: Save order to database
-    console.log('Payment successful:', paymentIntentId);
-    console.log('Customer info:', customerInfo);
-    console.log('Order items:', state.items);
+    if (!customerInfo) return;
+    
+    // Create order object
+    const orderData = {
+      userId: authState.user?.id || 'guest',
+      items: state.items.map(item => ({
+        productId: item.product.id,
+        name: item.product.name,
+        price: item.product.originalPrice || item.product.price,
+        quantity: item.quantity,
+        image: item.product.image,
+      })),
+      total,
+      status: 'processing' as const,
+      paymentIntentId,
+      shippingAddress: {
+        name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        email: customerInfo.email,
+        address: `${customerInfo.address.line1} ${customerInfo.address.line2}`.trim(),
+        city: customerInfo.address.city,
+        postalCode: customerInfo.address.postalCode,
+        country: customerInfo.address.country,
+      },
+    };
+    
+    // Save order
+    addOrder(orderData);
+    
+    console.log('Order saved:', orderData);
     
     // Clear cart and redirect to confirmation
     clearCart();

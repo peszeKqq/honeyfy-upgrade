@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerInfo {
   firstName: string;
@@ -22,6 +23,8 @@ interface CheckoutFormProps {
 }
 
 export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps) {
+  const { state } = useAuth();
+  
   const [formData, setFormData] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -32,11 +35,53 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
       line2: '',
       city: '',
       postalCode: '',
-      country: 'Netherlands',
+      country: 'NL',
     },
   });
 
   const [errors, setErrors] = useState<any>({});
+  const [addressLoaded, setAddressLoaded] = useState(false);
+
+  // Load saved shipping address and user data
+  useEffect(() => {
+    if (state.user && !addressLoaded) {
+      // Pre-fill with user's email and name from profile
+      const updatedFormData = {
+        ...formData,
+        email: state.user.email || '',
+        firstName: state.user.name?.split(' ')[0] || '',
+        lastName: state.user.name?.split(' ').slice(1).join(' ') || '',
+      };
+
+      // Try to load saved shipping address
+      if (typeof window !== 'undefined') {
+        const savedAddress = localStorage.getItem(`honeyfy-address-${state.user.id}`);
+        
+        if (savedAddress) {
+          try {
+            const addressData = JSON.parse(savedAddress);
+            
+            // Map profile address fields to checkout format
+            updatedFormData.firstName = addressData.firstName || updatedFormData.firstName;
+            updatedFormData.lastName = addressData.lastName || updatedFormData.lastName;
+            updatedFormData.phone = addressData.phone || '';
+            updatedFormData.address = {
+              line1: addressData.address1 || '',
+              line2: addressData.address2 || '',
+              city: addressData.city || '',
+              postalCode: addressData.postalCode || '',
+              country: addressData.country || 'NL',
+            };
+          } catch (error) {
+            console.error('Error loading saved address:', error);
+          }
+        }
+      }
+
+      setFormData(updatedFormData);
+      setAddressLoaded(true);
+    }
+  }, [state.user, addressLoaded]);
 
   const handleInputChange = (field: string, value: string) => {
     if (field.includes('.')) {
@@ -44,7 +89,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof CustomerInfo],
+          ...(prev[parent as keyof CustomerInfo] as any),
           [child]: value,
         },
       }));
@@ -57,7 +102,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev: any) => ({
         ...prev,
         [field]: undefined,
       }));
@@ -118,7 +163,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="firstName"
               value={formData.firstName}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.firstName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="John"
@@ -137,7 +182,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="lastName"
               value={formData.lastName}
               onChange={(e) => handleInputChange('lastName', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.lastName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Doe"
@@ -156,7 +201,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="email"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="john@example.com"
@@ -175,7 +220,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="phone"
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.phone ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="+31 6 12345678"
@@ -189,12 +234,39 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
 
       {/* Shipping Address */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-          <span className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-            📦
-          </span>
-          Shipping Address
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center">
+            <span className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+              📦
+            </span>
+            Shipping Address
+          </h3>
+          {state.user && (
+            <a
+              href="/profile"
+              className="text-yellow-600 hover:text-yellow-700 text-sm font-medium flex items-center space-x-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span>Edit in Profile</span>
+            </a>
+          )}
+        </div>
+
+        {/* Address loaded indicator */}
+        {state.user && addressLoaded && formData.address.line1 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-green-800 font-medium">
+                Shipping address loaded from your profile
+              </span>
+            </div>
+          </div>
+        )}
         
         <div className="space-y-4">
           <div>
@@ -206,7 +278,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="address1"
               value={formData.address.line1}
               onChange={(e) => handleInputChange('address.line1', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.address?.line1 ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="123 Main Street"
@@ -225,7 +297,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               id="address2"
               value={formData.address.line2}
               onChange={(e) => handleInputChange('address.line2', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black"
               placeholder="Apartment, suite, etc."
             />
           </div>
@@ -240,7 +312,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
                 id="city"
                 value={formData.address.city}
                 onChange={(e) => handleInputChange('address.city', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                   errors.address?.city ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Amsterdam"
@@ -259,7 +331,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
                 id="postalCode"
                 value={formData.address.postalCode}
                 onChange={(e) => handleInputChange('address.postalCode', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                   errors.address?.postalCode ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="1234 AB"
@@ -277,14 +349,21 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
                 id="country"
                 value={formData.address.country}
                 onChange={(e) => handleInputChange('address.country', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black"
               >
-                <option value="Netherlands">Netherlands</option>
-                <option value="Belgium">Belgium</option>
-                <option value="Germany">Germany</option>
-                <option value="France">France</option>
-                <option value="United Kingdom">United Kingdom</option>
-                <option value="Poland">Poland</option>
+                <option value="">Select Country</option>
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="GB">United Kingdom</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="IT">Italy</option>
+                <option value="ES">Spain</option>
+                <option value="NL">Netherlands</option>
+                <option value="PL">Poland</option>
+                <option value="AU">Australia</option>
+                <option value="JP">Japan</option>
+                <option value="OTHER">Other</option>
               </select>
             </div>
           </div>

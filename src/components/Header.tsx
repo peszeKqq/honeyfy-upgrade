@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CartIcon from './CartIcon';
+import UserMenu from './UserMenu';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -54,9 +55,7 @@ export default function Header() {
               🔍
             </Link>
             <CartIcon />
-            <Link href="/account" className="text-gray-700 hover:text-yellow-600 transition-colors">
-              👤
-            </Link>
+            <UserMenu />
           </div>
 
           {/* Mobile Menu Button */}
@@ -101,9 +100,7 @@ export default function Header() {
                 <CartIcon />
                 <span className="ml-2 text-gray-700">Cart</span>
               </div>
-              <Link href="/account" className="text-gray-700 hover:text-yellow-600 transition-colors">
-                👤 Account
-              </Link>
+              <UserMenu />
             </div>
           </div>
         )}
