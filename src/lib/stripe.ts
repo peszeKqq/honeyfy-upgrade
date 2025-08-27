@@ -26,8 +26,10 @@ export const createPaymentIntent = async (amount: number, currency: string = 'eu
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency,
+      payment_method_types: ['card', 'ideal', 'sepa_debit'],
       automatic_payment_methods: {
         enabled: true,
+        allow_redirects: 'never',
       },
     });
     return paymentIntent;

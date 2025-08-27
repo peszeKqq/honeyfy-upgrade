@@ -1,52 +1,130 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { CartProvider } from "@/contexts/CartContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { OrderProvider } from "@/contexts/OrderContext";
-import CartSidebar from "@/components/CartSidebar";
+import type { Metadata } from 'next'
+import { Inter, Cormorant_Garamond } from 'next/font/google'
+import './globals.css'
+import TopBar from '@/components/TopBar'
+import Footer from '@/components/Footer'
+import CartSidebar from '@/components/CartSidebar'
+import FloatingContactWidget from '@/components/FloatingContactWidget'
+import TrustedStoreBadge from '@/components/TrustedStoreBadge'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { CartProvider } from '@/contexts/CartContext'
+import { OrderProvider } from '@/contexts/OrderContext'
+import StructuredData from '@/components/StructuredData'
+import { generateOrganizationStructuredData } from '@/lib/seo'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const cormorant = Cormorant_Garamond({ 
+  subsets: ['latin'],
+  variable: '--font-cormorant',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
-  title: "Honeyfy - Premium Natural Honey",
-  description: "Discover the finest natural honey from sustainable beekeeping. Premium quality honey for health-conscious consumers.",
-  keywords: "honey, natural honey, premium honey, sustainable beekeeping, organic honey",
-};
+  title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
+  description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €50.',
+  keywords: 'Polish honey, organic honey, buy honey online, Dutch honey, premium honey, honey delivery Netherlands, pure honey, natural honey, sustainable honey',
+  authors: [{ name: 'Honeyfy' }],
+  creator: 'Honeyfy',
+  publisher: 'Honeyfy',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://honeyfy.nl'),
+  alternates: {
+    canonical: 'https://honeyfy.nl',
+  },
+  openGraph: {
+    title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
+    description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €50.',
+    url: 'https://honeyfy.nl',
+    siteName: 'Honeyfy',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Honeyfy - Premium Polish Honey',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
+    description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products.',
+    images: ['/logo.png'],
+    creator: '@honeyfy_nl',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+    yahoo: 'your-yahoo-verification-code',
+  },
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-          return (
-          <html lang="en">
-            <body
-              className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            >
-              <AuthProvider>
-                <OrderProvider>
-                  <CartProvider>
-                    <Header />
-                    <main className="min-h-screen">
-                      {children}
-                    </main>
-                    <Footer />
-                    <CartSidebar />
-                  </CartProvider>
-                </OrderProvider>
-              </AuthProvider>
-            </body>
-          </html>
-        );
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
+      <body className={`${inter.variable} ${cormorant.variable} font-sans`}>
+        <GoogleAnalytics />
+        <StructuredData data={generateOrganizationStructuredData()} />
+        <AuthProvider>
+          <CartProvider>
+            <OrderProvider>
+              {/* Top Bar and Header - Combined in TopBar component */}
+              <TopBar />
+              
+              {/* Main Content */}
+              <main>
+                {children}
+              </main>
+              
+              {/* Footer */}
+              <Footer />
+              
+              {/* Cart Sidebar */}
+              <CartSidebar />
+              
+              {/* Floating Contact Widget */}
+              <FloatingContactWidget />
+              
+              {/* Trusted Store Badge */}
+              <TrustedStoreBadge />
+            </OrderProvider>
+          </CartProvider>
+        </AuthProvider>
+      </body>
+    </html>
+  )
 }

@@ -6,6 +6,7 @@ import { useOrders } from '@/contexts/OrderContext';
 import { useAuth } from '@/contexts/AuthContext';
 import CheckoutForm from '@/components/CheckoutForm';
 import PaymentForm from '@/components/PaymentForm';
+import LoyaltyPoints from '@/components/LoyaltyPoints';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -31,9 +32,12 @@ export default function CheckoutPage() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
   const router = useRouter();
 
-  const total = getTotalPrice();
+  const subtotal = getTotalPrice();
+  const shipping = subtotal >= 69 ? 0 : 5.99;
+  const total = subtotal + shipping - loyaltyDiscount;
 
   // Redirect if cart is empty
   if (state.items.length === 0) {
@@ -41,8 +45,8 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🛒</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
-          <p className="text-gray-600 mb-8">Add some products to your cart before checkout.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4 font-heading">Your cart is empty</h1>
+          <p className="text-gray-600 mb-8 font-body">Add some products to your cart before checkout.</p>
           <Link
             href="/"
             className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
@@ -57,9 +61,31 @@ export default function CheckoutPage() {
   const handleCustomerSubmit = (info: CustomerInfo) => {
     setCustomerInfo(info);
     setStep('payment');
+    
+    // Store order data and user data when moving to payment step
+    if (typeof window !== 'undefined') {
+      // Store order data
+      localStorage.setItem('honeyfy-order-data', JSON.stringify({
+        pointsEarned: 0,
+        orderTotal: subtotal,
+        timestamp: Date.now()
+      }));
+      
+      // Store user data for loyalty points update
+      if (authState.user) {
+        localStorage.setItem('honeyfy-user-data', JSON.stringify({
+          id: authState.user.id,
+          email: authState.user.email
+        }));
+      }
+      
+      console.log('✅ Stored order and user data for payment step');
+      console.log('Order total:', subtotal);
+      console.log('User ID:', authState.user?.id);
+    }
   };
 
-  const handlePaymentSuccess = (paymentIntentId: string) => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     if (!customerInfo) return;
     
     // Create order object
@@ -72,6 +98,9 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         image: item.product.image,
       })),
+      subtotal,
+      shipping,
+      loyaltyDiscount,
       total,
       status: 'processing' as const,
       paymentIntentId,
@@ -90,8 +119,99 @@ export default function CheckoutPage() {
     
     console.log('Order saved:', orderData);
     
+    // Update loyalty points after successful order
+    let loyaltyPointsEarned = 0;
+    console.log('=== LOYALTY POINTS UPDATE DEBUG ===');
+    console.log('Auth state:', authState);
+    console.log('User ID:', authState.user?.id);
+    console.log('Subtotal:', subtotal);
+    console.log('User logged in:', !!authState.user?.id);
+    console.log('Subtotal > 0:', subtotal > 0);
+    
+    if (authState.user?.id && subtotal > 0) {
+      console.log('✅ Proceeding with loyalty points update');
+      console.log('Updating loyalty points for user:', authState.user.id, 'amount:', subtotal);
+      try {
+        const requestBody = {
+          userId: authState.user.id,
+          orderAmount: subtotal
+        };
+        console.log('Sending loyalty points request:', requestBody);
+        
+        const response = await fetch('/api/loyalty/points', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+        
+        console.log('Loyalty points response status:', response.status);
+        console.log('Loyalty points response headers:', response.headers);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Loyalty points response data:', data);
+          // Extract points earned from the message
+          const message = data.message || '';
+          const match = message.match(/Earned ([\d.]+) points/);
+          if (match) {
+            loyaltyPointsEarned = parseFloat(match[1]);
+            console.log('✅ Points earned:', loyaltyPointsEarned);
+          }
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Loyalty points API error:', errorData);
+        }
+      } catch (error) {
+        console.error('❌ Error updating loyalty points:', error);
+      }
+    } else {
+      console.log('❌ Skipping loyalty points update - user not logged in or subtotal is 0');
+      console.log('User ID:', authState.user?.id, 'Subtotal:', subtotal);
+    }
+    console.log('=== END LOYALTY POINTS UPDATE DEBUG ===');
+    
+    // Store order data and user data temporarily for confirmation page
+    if (typeof window !== 'undefined') {
+      // Store order data
+      localStorage.setItem('honeyfy-order-data', JSON.stringify({
+        pointsEarned: loyaltyPointsEarned,
+        orderTotal: subtotal,
+        timestamp: Date.now()
+      }));
+      
+      // Store user data for loyalty points update
+      if (authState.user) {
+        localStorage.setItem('honeyfy-user-data', JSON.stringify({
+          id: authState.user.id,
+          email: authState.user.email
+        }));
+      }
+    }
+    
     // Clear cart and redirect to confirmation
+    console.log('About to clear cart, current items:', state.items);
     clearCart();
+    console.log('Cart cleared, redirecting to confirmation with:', {
+      paymentIntentId,
+      loyaltyPointsEarned,
+      subtotal
+    });
+    
+    // Force clear localStorage as well
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('honeyfy-cart');
+      console.log('localStorage cart cleared');
+      
+      // Also clear any other cart-related data
+      localStorage.removeItem('honeyfy-cart-state');
+      console.log('All cart data cleared from localStorage');
+    }
+    
+    // Force a small delay to ensure cart clearing is processed
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     router.push(`/confirmation?payment_intent=${paymentIntentId}`);
   };
 
@@ -136,7 +256,14 @@ export default function CheckoutPage() {
             {/* Main Content */}
             <div className="lg:col-span-2">
               {step === 'customer' ? (
-                <CheckoutForm onSubmit={handleCustomerSubmit} isLoading={isLoading} />
+                <>
+                  <LoyaltyPoints
+                    totalAmount={subtotal}
+                    onDiscountApplied={setLoyaltyDiscount}
+                    onDiscountRemoved={() => setLoyaltyDiscount(0)}
+                  />
+                  <CheckoutForm onSubmit={handleCustomerSubmit} isLoading={isLoading} />
+                </>
               ) : (
                 <PaymentForm
                   amount={total}
@@ -181,25 +308,31 @@ export default function CheckoutPage() {
                 <div className="space-y-2 border-t border-gray-200 pt-4">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>€{total.toFixed(2)}</span>
+                    <span>€{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span className={total >= 50 ? 'text-green-600' : 'text-gray-600'}>
-                      {total >= 50 ? 'FREE' : '€5.99'}
+                    <span className={subtotal >= 50 ? 'text-green-600' : 'text-gray-600'}>
+                      {subtotal >= 50 ? 'FREE' : '€5.99'}
                     </span>
                   </div>
+                  {loyaltyDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Loyalty Discount</span>
+                      <span>-€{loyaltyDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                     <span>Total</span>
-                    <span>€{(total >= 50 ? total : total + 5.99).toFixed(2)}</span>
+                    <span>€{total.toFixed(2)}</span>
                   </div>
                 </div>
 
                 {/* Free Shipping Notice */}
-                {total < 50 && (
+                {subtotal < 50 && (
                   <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <p className="text-sm text-yellow-800">
-                      Add €{(50 - total).toFixed(2)} more for <strong>FREE shipping</strong>
+                      Add €{(50 - subtotal).toFixed(2)} more for <strong>FREE shipping</strong>
                     </p>
                   </div>
                 )}

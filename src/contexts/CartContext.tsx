@@ -32,8 +32,18 @@ const loadCartFromStorage = (): CartState => {
   
   try {
     const savedCart = localStorage.getItem('honeyfy-cart');
+    console.log('Loading cart from localStorage:', savedCart);
     if (savedCart) {
       const parsedCart = JSON.parse(savedCart);
+      // Check if cart was recently cleared (within last 5 seconds)
+      const cartClearedTime = localStorage.getItem('honeyfy-cart-cleared-time');
+      if (cartClearedTime) {
+        const timeSinceCleared = Date.now() - parseInt(cartClearedTime);
+        if (timeSinceCleared < 5000) { // 5 seconds
+          console.log('Cart was recently cleared, starting with empty cart');
+          return { items: [], isOpen: false };
+        }
+      }
       return {
         items: parsedCart.items || [],
         isOpen: false, // Always start with cart closed
@@ -151,6 +161,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items: state.items,
         // Don't save isOpen state to localStorage
       }));
+      console.log('Cart saved to localStorage:', state.items);
     }
   }, [state.items]);
 
@@ -167,7 +178,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = () => {
+    console.log('Clearing cart...');
     dispatch({ type: 'CLEAR_CART' });
+    // Also clear localStorage immediately
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('honeyfy-cart');
+      localStorage.setItem('honeyfy-cart-cleared-time', Date.now().toString());
+      console.log('localStorage cleared in clearCart function');
+    }
   };
 
   const toggleCart = () => {

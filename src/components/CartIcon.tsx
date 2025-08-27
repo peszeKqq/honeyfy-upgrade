@@ -1,19 +1,59 @@
 'use client';
 
 import { useCart } from '@/contexts/CartContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function CartIcon() {
   const { getTotalItems, toggleCart } = useCart();
-  const itemCount = getTotalItems();
+  const [itemCount, setItemCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+    setItemCount(getTotalItems());
+  }, [getTotalItems]);
+
+  // Update item count when cart changes
+  useEffect(() => {
+    if (isMounted) {
+      setItemCount(getTotalItems());
+    }
+  }, [getTotalItems, isMounted]);
+
+  if (!isMounted) {
+    return (
+      <button
+        className="relative p-2 text-gray-700 hover:text-yellow-600 transition-all duration-300 group"
+        aria-label="Shopping cart"
+      >
+        <div className="relative">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
+            />
+          </svg>
+        </div>
+      </button>
+    );
+  }
 
   return (
     <button
       onClick={toggleCart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative p-2 text-gray-700 hover:text-yellow-600 transition-all duration-300 group"
+      className="relative p-3 text-white hover:text-yellow-400 transition-all duration-300 group bg-yellow-500/20 hover:bg-yellow-500/30 rounded-lg"
       aria-label="Shopping cart"
     >
       {/* Enhanced Cart Icon */}

@@ -51,8 +51,10 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        console.log('✅ Payment succeeded, calling onSuccess with:', paymentIntent.id);
         onSuccess(paymentIntent.id);
       } else if (paymentIntent?.status === 'requires_action') {
+        console.log('⚠️ Payment requires action, redirecting...');
         // Handle 3D Secure or other authentication
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
@@ -65,6 +67,7 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
           throw new Error(confirmError.message || 'Payment authentication failed');
         }
       } else {
+        console.log('❌ Payment status:', paymentIntent?.status);
         throw new Error('Payment was not successful');
       }
     } catch (err) {
@@ -78,7 +81,7 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
 
   const paymentElementOptions = {
     layout: 'tabs' as const,
-    paymentMethodOrder: ['card', 'ideal', 'sofort', 'bancontact', 'giropay', 'sepa_debit', 'eps', 'p24'],
+    paymentMethodOrder: ['card', 'ideal', 'sepa_debit', 'google_pay', 'apple_pay'],
   };
 
   return (

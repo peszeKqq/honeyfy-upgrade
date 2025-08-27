@@ -12,12 +12,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payment intent with automatic payment methods
+    // Create payment intent with specific payment methods only
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency,
+      payment_method_types: ['card', 'ideal', 'sepa_debit'],
       automatic_payment_methods: {
         enabled: true,
+        allow_redirects: 'never',
       },
     });
 

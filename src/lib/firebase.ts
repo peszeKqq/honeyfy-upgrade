@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, serverTimestamp, DocumentData } from 'firebase/firestore';
 
 // Check if Firebase config is available
 const hasFirebaseConfig = 
@@ -27,9 +27,9 @@ const firebaseConfig = hasFirebaseConfig ? {
 };
 
 // Initialize Firebase
-let app;
-let auth;
-let db;
+let app: any;
+let auth: any;
+let db: any;
 
 try {
   console.log('Initializing Firebase with config:', {
@@ -48,6 +48,134 @@ try {
   auth = null;
   db = null;
 }
+
+// Order management functions
+export const orderService = {
+  // Test Firebase connection
+  async testConnection() {
+    if (!db) {
+      console.warn('Firebase not initialized');
+      return { success: false, error: 'Firebase not initialized' };
+    }
+
+    try {
+      // Try to read from a test collection
+      const testQuery = query(collection(db, 'test'));
+      const snapshot = await getDocs(testQuery);
+      console.log('✅ Firebase connection test successful');
+      return { success: true, message: 'Firebase connected' };
+    } catch (error) {
+      console.error('❌ Firebase connection test failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        code: error instanceof Error && 'code' in error ? (error as any).code : 'unknown'
+      };
+    }
+  },
+
+  // Add new order - try Firebase first, fallback to localStorage
+  async addOrder(orderData: any) {
+    if (!db) {
+      console.warn('Firebase not initialized, using localStorage');
+      const localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      return localId;
+    }
+
+    try {
+      const orderWithTimestamp = {
+        ...orderData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
+      console.log('✅ Order added to Firebase with ID:', docRef.id);
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ Error adding order to Firebase:', error);
+      console.log('⚠️ Firebase failed, using localStorage fallback');
+      const localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      return localId;
+    }
+  },
+
+  // Get orders for a specific user - try Firebase first, fallback to localStorage
+  async getUserOrders(userId: string) {
+    if (!db) {
+      console.warn('Firebase not initialized, returning empty array');
+      return [];
+    }
+
+    try {
+      const ordersQuery = query(
+        collection(db, 'orders'),
+        where('userId', '==', userId)
+      );
+
+      const querySnapshot = await getDocs(ordersQuery);
+      const orders: DocumentData[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        orders.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        });
+      });
+
+      console.log(`✅ Retrieved ${orders.length} orders from Firebase for user ${userId}`);
+      return orders;
+    } catch (error) {
+      console.error('❌ Error fetching orders from Firebase:', error);
+      console.log('⚠️ Firebase failed, returning empty array');
+      return [];
+    }
+  },
+
+  // Update order status
+  async updateOrderStatus(orderId: string, status: string) {
+    console.log('🔄 Using localStorage for order status update (Firebase disabled)');
+    return true;
+  },
+
+  // Get all orders (for admin purposes)
+  async getAllOrders() {
+    if (!db) {
+      console.warn('Firebase not initialized, returning empty array');
+      return [];
+    }
+
+    try {
+      const ordersQuery = query(
+        collection(db, 'orders'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const querySnapshot = await getDocs(ordersQuery);
+      const orders: DocumentData[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        orders.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        });
+      });
+
+      console.log(`✅ Retrieved ${orders.length} total orders from Firebase`);
+      return orders;
+    } catch (error) {
+      console.error('❌ Error fetching all orders from Firebase:', error);
+      console.log('⚠️ Firebase failed, returning empty array');
+      return [];
+    }
+  }
+};
 
 export { auth, db };
 

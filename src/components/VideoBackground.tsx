@@ -42,7 +42,7 @@ export default function VideoBackground({ videoSrc, fallbackImage }: VideoBackgr
       {/* Video Background */}
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover sm:object-cover object-center sm:object-center scale-125 sm:scale-100"
         autoPlay
         loop
         muted
@@ -54,13 +54,13 @@ export default function VideoBackground({ videoSrc, fallbackImage }: VideoBackgr
         
         {/* Fallback for browsers that don't support video */}
         {fallbackImage && (
-          <img src={fallbackImage} alt="Honey background" className="w-full h-full object-cover" />
+          <img src={fallbackImage} alt="Honey background" className="w-full h-full object-cover sm:object-cover object-center sm:object-center scale-125 sm:scale-100" />
         )}
       </video>
       
       {/* Loading state */}
       {!isLoaded && fallbackImage && (
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${fallbackImage})` }}>
+        <div className="absolute inset-0 bg-cover bg-center scale-125 sm:scale-100" style={{ backgroundImage: `url(${fallbackImage})` }}>
           <div className="absolute inset-0 bg-black/20"></div>
         </div>
       )}

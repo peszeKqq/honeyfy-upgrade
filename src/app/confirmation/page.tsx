@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 
 export default function ConfirmationPage() {
   const [paymentIntentId, setPaymentIntentId] = useState<string>('');
+  const [pointsEarned, setPointsEarned] = useState<number>(0);
+  const [orderTotal, setOrderTotal] = useState<number>(0);
   const [isVisible, setIsVisible] = useState(false);
   const [showHoney, setShowHoney] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -14,9 +16,106 @@ export default function ConfirmationPage() {
   useEffect(() => {
     // Get payment intent ID from URL
     const paymentIntent = searchParams.get('payment_intent');
+    
+    console.log('Confirmation page URL params:', { paymentIntent });
+    
     if (paymentIntent) {
       setPaymentIntentId(paymentIntent);
     }
+    
+    // Ensure cart is cleared on confirmation page load
+    if (typeof window !== 'undefined') {
+      const cartData = localStorage.getItem('honeyfy-cart');
+      console.log('Cart data on confirmation page:', cartData);
+      if (cartData) {
+        const parsedCart = JSON.parse(cartData);
+        if (parsedCart.items && parsedCart.items.length > 0) {
+          console.log('Cart still has items, clearing...');
+          localStorage.removeItem('honeyfy-cart');
+        }
+      }
+    }
+    
+    // Handle loyalty points update on confirmation page load
+    const handleLoyaltyPointsUpdate = async () => {
+      console.log('=== CONFIRMATION PAGE LOADED ===');
+      console.log('Checking localStorage for order data...');
+      
+      try {
+        // Get order data from localStorage
+        const orderData = localStorage.getItem('honeyfy-order-data');
+        console.log('Raw order data from localStorage:', orderData);
+        
+        if (orderData) {
+          const parsedData = JSON.parse(orderData);
+          console.log('Retrieved order data from localStorage:', parsedData);
+          
+          // Check if data is recent (within last 5 minutes)
+          const isRecent = Date.now() - parsedData.timestamp < 5 * 60 * 1000;
+          
+          if (isRecent && parsedData.orderTotal > 0) {
+            console.log('=== LOYALTY POINTS UPDATE FROM CONFIRMATION PAGE ===');
+            
+                         // Get user ID from localStorage or auth context
+             const userData = localStorage.getItem('honeyfy-user-data');
+             console.log('Raw user data from localStorage:', userData);
+             let userId = null;
+             
+             if (userData) {
+               const user = JSON.parse(userData);
+               userId = user.id;
+             }
+             
+             console.log('User ID from localStorage:', userId);
+            console.log('Order total:', parsedData.orderTotal);
+            
+            if (userId && parsedData.orderTotal > 0) {
+              console.log('✅ Updating loyalty points from confirmation page');
+              
+              const response = await fetch('/api/loyalty/points', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: userId,
+                  orderAmount: parsedData.orderTotal
+                }),
+              });
+              
+              console.log('Loyalty points response status:', response.status);
+              
+              if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Loyalty points updated successfully:', data);
+                
+                // Extract points earned from the message
+                const message = data.message || '';
+                const match = message.match(/Earned ([\d.]+) points/);
+                if (match) {
+                  const earnedPoints = parseFloat(match[1]);
+                  setPointsEarned(earnedPoints);
+                  console.log('✅ Points earned:', earnedPoints);
+                }
+              } else {
+                const errorData = await response.json();
+                console.error('❌ Loyalty points API error:', errorData);
+              }
+            } else {
+              console.log('❌ No user ID or order total, skipping loyalty points update');
+            }
+            
+            // Clear the temporary data
+            localStorage.removeItem('honeyfy-order-data');
+          }
+        }
+      } catch (error) {
+        console.error('Error handling loyalty points update:', error);
+      }
+    };
+    
+    // Call the loyalty points update function
+    handleLoyaltyPointsUpdate();
 
     // Animate elements on mount
     const timer1 = setTimeout(() => setIsVisible(true), 100);
@@ -78,13 +177,13 @@ export default function ConfirmationPage() {
         <div className={`bg-white rounded-2xl shadow-2xl p-8 text-center transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
-          <h1 className={`text-3xl font-bold text-gray-900 mb-4 transform transition-all duration-700 ${
+          <h1 className={`text-3xl font-bold text-gray-900 mb-4 transform transition-all duration-700 font-heading ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}>
             🎉 Order Confirmed!
           </h1>
           
-          <p className={`text-lg text-gray-600 mb-6 transform transition-all duration-700 ${
+          <p className={`text-lg text-gray-600 mb-6 transform transition-all duration-700 font-body ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`} style={{ transitionDelay: '200ms' }}>
             Your order has been successfully placed and payment has been processed.
@@ -137,8 +236,36 @@ export default function ConfirmationPage() {
                 <span className="text-gray-600">Payment Method:</span>
                 <span className="text-gray-900">Credit Card</span>
               </div>
+              {orderTotal > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Order Total:</span>
+                  <span className="text-gray-900 font-semibold">€{orderTotal.toFixed(2)}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Loyalty Points Earned */}
+          {pointsEarned > 0 && (
+            <div className={`bg-gradient-to-r from-yellow-100 to-amber-100 rounded-xl p-6 mb-8 transform transition-all duration-700 ${
+              showDetails ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`} style={{ transitionDelay: '500ms' }}>
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-3 mb-3">
+                  <span className="text-3xl">🎁</span>
+                  <h3 className="text-xl font-bold text-yellow-800">Loyalty Points Earned!</h3>
+                  <span className="text-3xl">🎁</span>
+                </div>
+                <div className="bg-white rounded-lg p-4 border-2 border-yellow-300">
+                  <div className="text-4xl font-bold text-yellow-600 mb-2">+{pointsEarned} points</div>
+                  <p className="text-yellow-700 font-medium">You've earned loyalty points for your next purchase!</p>
+                  <p className="text-yellow-600 text-sm mt-2">
+                    Earn 1 point for every €1 spent • 50 points = €5, 100 points = €12, 150 points = €20
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Next Steps */}
           <div className={`bg-amber-50 rounded-xl p-6 mb-8 transform transition-all duration-700 ${
@@ -195,10 +322,10 @@ export default function ConfirmationPage() {
           <div className={`flex flex-col sm:flex-row gap-4 transform transition-all duration-700 ${
             showDetails ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`} style={{ transitionDelay: '1000ms' }}>
-            <Link
-              href="/"
-              className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
+                         <Link
+               href="/?from_confirmation=true"
+               className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+             >
               <span className="flex items-center justify-center space-x-2">
                 <span>Continue Shopping</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

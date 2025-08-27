@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrderContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -11,12 +11,47 @@ export default function DashboardPage() {
   const { getUserOrders } = useOrders();
   const router = useRouter();
 
+  // Loyalty points state
+  const [loyaltyData, setLoyaltyData] = useState({
+    totalPoints: 0,
+    availablePoints: 0,
+    totalSpent: 0,
+    discountAvailable: 0,
+    pointsUsed: 0
+  });
+  const [loyaltyLoading, setLoyaltyLoading] = useState(true);
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!state.isAuthenticated) {
       router.push('/');
     }
   }, [state.isAuthenticated, router]);
+
+  // Load loyalty points
+  useEffect(() => {
+    const fetchLoyaltyPoints = async () => {
+      if (!state.user?.id) return;
+      
+      try {
+        setLoyaltyLoading(true);
+        const response = await fetch(`/api/loyalty/points?userId=${state.user.id}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setLoyaltyData(data);
+        } else {
+          console.error('Error fetching loyalty points:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching loyalty points:', error);
+      } finally {
+        setLoyaltyLoading(false);
+      }
+    };
+
+    fetchLoyaltyPoints();
+  }, [state.user?.id]);
 
   if (!state.isAuthenticated || !state.user) {
     return (
@@ -38,10 +73,10 @@ export default function DashboardPage() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-heading">
             Welcome back, {user.name}! 🍯
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 font-body">
             Manage your account and track your sweet journey with Honeyfy
           </p>
         </div>
@@ -114,23 +149,66 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Wishlist */}
+          {/* Loyalty Points */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Wishlist</h3>
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
+              <h3 className="text-lg font-semibold text-gray-900">Loyalty Points</h3>
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">🎁</span>
+              </div>
             </div>
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No saved items</p>
-              <Link
-                href="/wishlist"
-                className="text-yellow-600 hover:text-yellow-700 font-medium"
-              >
-                View Wishlist
-              </Link>
-            </div>
+            {loyaltyLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span className="text-gray-600">Loading...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 border border-yellow-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900">Available Points</h4>
+                    <div className="text-2xl font-bold text-yellow-600">{loyaltyData.totalPoints || 0}</div>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Earn 1 point for every €1 spent!
+                  </p>
+                  <div className="bg-white rounded-lg p-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600">Progress to next reward:</span>
+                      <span className="font-medium text-gray-900">
+                        {loyaltyData.totalPoints || 0}/50 points
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(((loyaltyData.totalPoints || 0) % 50) / 50 * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <p className="text-blue-800 font-medium text-xs">Available Discount</p>
+                    <p className="text-lg font-bold text-blue-600">€{loyaltyData.discountAvailable || 0}</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                    <p className="text-green-800 font-medium text-xs">Total Spent</p>
+                    <p className="text-lg font-bold text-green-600">€{(loyaltyData.totalSpent || 0).toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h5 className="font-medium text-gray-900 text-xs mb-2">How it works:</h5>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>• 50 points = €5 discount</li>
+                    <li>• 100 points = €12 discount</li>
+                    <li>• 150 points = €20 discount</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -153,22 +231,7 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          <Link
-            href="/wishlist"
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Wishlist</h4>
-                <p className="text-sm text-gray-500">Saved items</p>
-              </div>
-            </div>
-          </Link>
+
 
           <Link
             href="/profile"
@@ -188,16 +251,35 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/"
+            href="/products"
             className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span className="text-xl">🍯</span>
+              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  src="/honey-forest.webp" 
+                  alt="Honey Products" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900">Shop Now</h4>
                 <p className="text-sm text-gray-500">Browse products</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/checkout"
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <span className="text-xl">🎁</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Use Points</h4>
+                <p className="text-sm text-gray-500">Apply loyalty discount</p>
               </div>
             </div>
           </Link>
@@ -207,36 +289,54 @@ export default function DashboardPage() {
         <div className="mt-12 bg-white rounded-2xl shadow-lg p-8">
           <h3 className="text-xl font-bold text-gray-900 mb-6">Recommended for You 🍯</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
-              <div className="text-4xl mb-3">🍯</div>
-              <h4 className="font-semibold text-gray-900 mb-2">Premium Wildflower Honey</h4>
-              <p className="text-sm text-gray-600 mb-4">Perfect for your morning toast</p>
-              <Link
-                href="/"
-                className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
-              >
-                View Product
-              </Link>
-            </div>
+                         <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
+               <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden shadow-md">
+                 <img 
+                   src="/heather-honey.webp" 
+                   alt="Heather Honey" 
+                   className="w-full h-full object-cover"
+                 />
+               </div>
+               <h4 className="font-semibold text-gray-900 mb-2">Heather Honey</h4>
+               <p className="text-sm text-gray-600 mb-4">Rare Highland honey with strong aromatic flavor</p>
+               <Link
+                 href="/products/heather-honey"
+                 className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+               >
+                 View Product
+               </Link>
+             </div>
+            
+                         <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
+               <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden shadow-md">
+                 <img 
+                   src="/acacia-honey.webp" 
+                   alt="Acacia Honey" 
+                   className="w-full h-full object-cover"
+                 />
+               </div>
+               <h4 className="font-semibold text-gray-900 mb-2">Acacia Honey</h4>
+               <p className="text-sm text-gray-600 mb-4">Light and delicate with slow crystallization</p>
+               <Link
+                 href="/products/acacia-honey"
+                 className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+               >
+                 View Product
+               </Link>
+             </div>
             
             <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
-              <div className="text-4xl mb-3">🍯</div>
-              <h4 className="font-semibold text-gray-900 mb-2">Manuka Honey</h4>
-              <p className="text-sm text-gray-600 mb-4">Premium healing properties</p>
-              <Link
-                href="/"
-                className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
-              >
-                View Product
-              </Link>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
-              <div className="text-4xl mb-3">🍯</div>
+              <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden shadow-md">
+                <img 
+                  src="/logoheader.png" 
+                  alt="Raw Clover Honey" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <h4 className="font-semibold text-gray-900 mb-2">Raw Clover Honey</h4>
               <p className="text-sm text-gray-600 mb-4">Pure and unprocessed</p>
               <Link
-                href="/"
+                href="/products/raw-forest-honey"
                 className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
               >
                 View Product
