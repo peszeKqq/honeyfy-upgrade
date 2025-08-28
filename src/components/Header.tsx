@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import CartIcon from './CartIcon';
 import UserMenu from './UserMenu';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '@/lib/translations';
 
 interface HeaderProps {
   bannerVisible?: boolean;
@@ -16,11 +18,97 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [currentLocale, setCurrentLocale] = useState('en');
 
   // Prevent hydration mismatch
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Detect current locale from pathname - update when pathname changes
+  useEffect(() => {
+    const detectLocale = () => {
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+        const detectedLocale = localeMatch ? localeMatch[1] : 'en';
+        
+
+        
+        setCurrentLocale(detectedLocale);
+      }
+    };
+
+    // Detect on mount
+    detectLocale();
+
+    // Listen for route changes
+    const handleRouteChange = () => {
+      detectLocale();
+    };
+
+    // Add event listener for route changes
+    window.addEventListener('popstate', handleRouteChange);
+    
+    // Also check periodically for pathname changes (fallback)
+    const interval = setInterval(() => {
+      detectLocale();
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Get translations for current locale
+  const t = useTranslation(currentLocale);
+
+
+
+  // Temporary fallback translations for testing
+  const getNavText = (key: string) => {
+    const fallbackTranslations = {
+      en: {
+        home: 'Home',
+        products: 'Products',
+        about: 'About',
+        contact: 'Contact',
+        blog: 'Blog',
+        faq: 'FAQ',
+        wholesale: 'Wholesale'
+      },
+      nl: {
+        home: 'Home',
+        products: 'Producten',
+        about: 'Over Ons',
+        contact: 'Contact',
+        blog: 'Blog',
+        faq: 'FAQ',
+        wholesale: 'Groothandel'
+      },
+      pl: {
+        home: 'Strona Główna',
+        products: 'Produkty',
+        about: 'O Nas',
+        contact: 'Kontakt',
+        blog: 'Blog',
+        faq: 'FAQ',
+        wholesale: 'Hurt'
+      },
+
+    };
+    
+    return fallbackTranslations[currentLocale as keyof typeof fallbackTranslations]?.[key as keyof typeof fallbackTranslations.en] || t.nav[key as keyof typeof t.nav];
+  };
+
+  // Helper function to generate localized links
+  const getLocalizedLink = (path: string) => {
+    if (currentLocale === 'en') {
+      return path;
+    }
+    return `/${currentLocale}${path}`;
+  };
 
   // Handle scroll-based navbar visibility
   useEffect(() => {
@@ -76,8 +164,8 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
-              <Link href="/">
-                <div className="flex-grow items-start justify-start md:m-3 cursor-pointer md:mr-14">
+              <Link href={getLocalizedLink('/')} className="flex-shrink-0">
+                <div className="flex items-center cursor-pointer">
                   <Image
                     src="/logoheader.png"
                     alt="Honeyfy Logo"
@@ -90,81 +178,86 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
                 </div>
               </Link>
 
-              {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center space-x-8">
+              {/* Desktop Navigation - Center */}
+              <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
                 <Link 
-                  href="/" 
+                  href={getLocalizedLink('/')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>Home</span>
+                  <span>{getNavText('home')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/products" 
+                  href={getLocalizedLink('/products')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>Products</span>
+                  <span>{getNavText('products')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/about" 
+                  href={getLocalizedLink('/about')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>About</span>
+                  <span>{getNavText('about')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/contact" 
+                  href={getLocalizedLink('/contact')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>Contact</span>
+                  <span>{getNavText('contact')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/blog" 
+                  href={getLocalizedLink('/blog')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>Blog</span>
+                  <span>{getNavText('blog')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/faq" 
+                  href={getLocalizedLink('/faq')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>FAQ</span>
+                  <span>{getNavText('faq')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
                 <Link 
-                  href="/wholesale" 
+                  href={getLocalizedLink('/wholesale')} 
                   className="btn-ghost text-white hover:text-yellow-400 relative group"
                 >
-                  <span>Wholesale</span>
+                  <span>{getNavText('wholesale')}</span>
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               </nav>
 
               {/* Right side icons */}
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-4 flex-shrink-0">
+                {/* Debug: Show current locale */}
+                <span className="text-xs text-yellow-400 bg-black/20 px-2 py-1 rounded">
+                  {currentLocale}
+                </span>
+                {isMounted && <LanguageSwitcher />}
                 {isMounted && <CartIcon />}
                 {isMounted && <UserMenu />}
+                
+                {/* Mobile menu button */}
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="lg:hidden p-2 text-white hover:text-yellow-400 transition-colors duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
               </div>
-
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 text-white hover:text-yellow-400 transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
             </div>
 
             {/* Mobile Navigation */}
             <AnimatePresence>
               {isMenuOpen && (
                 <motion.div 
-                  className="md:hidden border-t border-gray-200"
+                  className="lg:hidden border-t border-gray-200"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
@@ -172,53 +265,53 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
                 >
                   <div className="py-4 space-y-4">
                     <Link 
-                      href="/" 
+                      href={getLocalizedLink('/')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Home
+                      {getNavText('home')}
                     </Link>
                     <Link 
-                      href="/products" 
+                      href={getLocalizedLink('/products')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Products
+                      {getNavText('products')}
                     </Link>
                     <Link 
-                      href="/about" 
+                      href={getLocalizedLink('/about')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      About
+                      {getNavText('about')}
                     </Link>
                     <Link 
-                      href="/contact" 
+                      href={getLocalizedLink('/contact')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Contact
+                      {getNavText('contact')}
                     </Link>
                     <Link 
-                      href="/blog" 
+                      href={getLocalizedLink('/blog')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Blog
+                      {getNavText('blog')}
                     </Link>
                     <Link 
-                      href="/faq" 
+                      href={getLocalizedLink('/faq')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      FAQ
+                      {getNavText('faq')}
                     </Link>
                     <Link 
-                      href="/wholesale" 
+                      href={getLocalizedLink('/wholesale')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Wholesale
+                      {getNavText('wholesale')}
                     </Link>
                     <div className="flex items-center">
                       {isMounted && <CartIcon />}

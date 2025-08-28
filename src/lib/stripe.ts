@@ -1,21 +1,52 @@
 import Stripe from 'stripe';
 
 // Server-side Stripe instance
-const secretKey = process.env.STRIPE_SECRET_KEY;
-console.log('Stripe Secret Key:', secretKey ? 'Present' : 'Missing');
+let stripe: Stripe | null = null;
 
-if (!secretKey) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is not set');
-}
+const initializeStripe = () => {
+  if (stripe) return stripe;
+  
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
-export const stripe = new Stripe(secretKey, {
-  apiVersion: '2025-07-30.basil',
-});
+  console.log('Stripe Secret Key:', secretKey ? 'Present' : 'Missing');
+  console.log('Stripe Publishable Key:', publishableKey ? 'Present' : 'Missing');
+
+  if (!secretKey) {
+    console.error('STRIPE_SECRET_KEY environment variable is not set');
+    return null;
+  }
+
+  if (!publishableKey) {
+    console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable is not set');
+    return null;
+  }
+
+  try {
+    stripe = new Stripe(secretKey, {
+      apiVersion: '2025-07-30.basil',
+    });
+    console.log('✅ Stripe initialized successfully');
+    return stripe;
+  } catch (error) {
+    console.error('❌ Failed to initialize Stripe:', error);
+    return null;
+  }
+};
+
+export const getStripeInstance = () => {
+  return initializeStripe();
+};
 
 // Client-side Stripe instance
 export const getStripe = () => {
   if (typeof window !== 'undefined') {
-    return require('@stripe/stripe-js').loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set');
+      return null;
+    }
+    return require('@stripe/stripe-js').loadStripe(publishableKey);
   }
   return null;
 };
@@ -23,13 +54,20 @@ export const getStripe = () => {
 // Create payment intent
 export const createPaymentIntent = async (amount: number, currency: string = 'eur') => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
+    const stripeInstance = getStripeInstance();
+    if (!stripeInstance) {
+      throw new Error('Stripe is not initialized');
+    }
+    
+    const paymentIntent = await stripeInstance.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency,
-      payment_method_types: ['card', 'ideal', 'sepa_debit'],
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never',
+      payment_method_types: ['card', 'ideal', 'google_pay', 'apple_pay'],
+      // Additional configuration for digital wallets
+      payment_method_options: {
+        card: {
+          request_three_d_secure: 'automatic',
+        },
       },
     });
     return paymentIntent;

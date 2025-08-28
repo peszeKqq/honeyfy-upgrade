@@ -3,35 +3,64 @@ import { products } from '@/data/products';
 import { generateSitemapData } from '@/lib/seo';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://honeyfy.nl';
+  const baseUrl = 'http://localhost:3000';
   const currentDate = new Date().toISOString();
+  const locales = ['', '/nl', '/pl'];
 
-  // Base pages
-  const basePages = generateSitemapData().map(page => ({
-    ...page,
-    changeFrequency: page.changeFrequency as "daily" | "weekly" | "monthly" | "always" | "hourly" | "yearly" | "never"
-  }));
+  // Generate localized base pages
+  const localizedBasePages = locales.flatMap(locale => {
+    const pages = [
+      {
+        url: `${baseUrl}${locale}`,
+        lastModified: currentDate,
+        changeFrequency: 'daily' as const,
+        priority: 1,
+      },
+      {
+        url: `${baseUrl}${locale}/products`,
+        lastModified: currentDate,
+        changeFrequency: 'weekly' as const,
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}${locale}/blog`,
+        lastModified: currentDate,
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      },
+      {
+        url: `${baseUrl}${locale}/about`,
+        lastModified: currentDate,
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+      },
+      {
+        url: `${baseUrl}${locale}/contact`,
+        lastModified: currentDate,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      },
+      {
+        url: `${baseUrl}${locale}/faq`,
+        lastModified: currentDate,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      },
+    ];
+    return pages;
+  });
 
-  // Product pages
-  const productPages = products.map((product) => ({
-    url: `${baseUrl}/products/${product.slug}`,
-    lastModified: currentDate,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
-
-  // Blog pages (if you have blog posts)
-  const blogPages = [
-    {
-      url: `${baseUrl}/blog`,
+  // Product pages for all locales
+  const productPages = locales.flatMap(locale => 
+    products.map((product) => ({
+      url: `${baseUrl}${locale}/products/${product.slug}`,
       lastModified: currentDate,
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    },
-    // Add individual blog posts here when you have them
-  ];
+      priority: 0.8,
+    }))
+  );
 
-  // Category pages
+  // Category pages (only for default locale for now)
   const categoryPages = [
     'bestseller',
     'premium',
@@ -48,9 +77,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   return [
-    ...basePages,
+    ...localizedBasePages,
     ...productPages,
-    ...blogPages,
     ...categoryPages,
   ];
 } 

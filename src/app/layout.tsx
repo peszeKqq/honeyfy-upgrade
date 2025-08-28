@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { Inter, Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 import TopBar from '@/components/TopBar'
-import Footer from '@/components/Footer'
-import CartSidebar from '@/components/CartSidebar'
+import FooterWrapper from '@/components/FooterWrapper'
+import CartSidebarWrapper from '@/components/CartSidebarWrapper'
 import FloatingContactWidget from '@/components/FloatingContactWidget'
 import TrustedStoreBadge from '@/components/TrustedStoreBadge'
 import { AuthProvider } from '@/contexts/AuthContext'
@@ -12,6 +12,7 @@ import { OrderProvider } from '@/contexts/OrderContext'
 import StructuredData from '@/components/StructuredData'
 import { generateOrganizationStructuredData } from '@/lib/seo'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
+import HreflangTagsServer from '@/components/HreflangTagsServer'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -28,7 +29,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
-  description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €50.',
+  description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €69.',
   keywords: 'Polish honey, organic honey, buy honey online, Dutch honey, premium honey, honey delivery Netherlands, pure honey, natural honey, sustainable honey',
   authors: [{ name: 'Honeyfy' }],
   creator: 'Honeyfy',
@@ -38,15 +39,15 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://honeyfy.nl'),
+  metadataBase: new URL('http://localhost:3000'),
   alternates: {
-    canonical: 'https://honeyfy.nl',
+    canonical: 'http://localhost:3000',
   },
-  openGraph: {
-    title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
-    description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €50.',
-    url: 'https://honeyfy.nl',
-    siteName: 'Honeyfy',
+      openGraph: {
+      title: 'Honeyfy - Premium Polish Honey | Buy Organic Honey Online',
+      description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €69.',
+      url: 'http://localhost:3000',
+      siteName: 'Honeyfy',
     images: [
       {
         url: '/logo.png',
@@ -95,6 +96,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <HreflangTagsServer pathname="/" currentLocale="en" />
       </head>
       <body className={`${inter.variable} ${cormorant.variable} font-sans`}>
         <GoogleAnalytics />
@@ -111,10 +113,10 @@ export default function RootLayout({
               </main>
               
               {/* Footer */}
-              <Footer />
+              <FooterWrapper />
               
               {/* Cart Sidebar */}
-              <CartSidebar />
+              <CartSidebarWrapper />
               
               {/* Floating Contact Widget */}
               <FloatingContactWidget />

@@ -11,20 +11,23 @@ import {
 } from '@stripe/react-stripe-js';
 
 // Load Stripe outside of component to avoid recreating on every render
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 interface PaymentFormProps {
   amount: number;
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
+  onProcessing?: (paymentIntentId: string) => void;
   isLoading: boolean;
 }
 
-function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProps) {
+function CheckoutForm({ amount, onSuccess, onError, onProcessing, isLoading }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -37,6 +40,13 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
     setError(null);
 
     try {
+      // Always save order data for iDEAL payments (both test and live)
+      // This ensures the order is saved even if the payment method detection fails
+      if (onProcessing) {
+        console.log('🔄 Saving order data before payment (for iDEAL compatibility)...');
+        onProcessing('temp_ideal_payment');
+      }
+
       // Confirm payment with any payment method
       const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
         elements,
@@ -55,6 +65,12 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
         onSuccess(paymentIntent.id);
       } else if (paymentIntent?.status === 'requires_action') {
         console.log('⚠️ Payment requires action, redirecting...');
+        
+        // Call onProcessing for redirect-based payments like iDEAL
+        if (onProcessing) {
+          onProcessing(paymentIntent.id);
+        }
+        
         // Handle 3D Secure or other authentication
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
@@ -81,7 +97,11 @@ function CheckoutForm({ amount, onSuccess, onError, isLoading }: PaymentFormProp
 
   const paymentElementOptions = {
     layout: 'tabs' as const,
-    paymentMethodOrder: ['card', 'ideal', 'sepa_debit', 'google_pay', 'apple_pay'],
+    paymentMethodOrder: ['card', 'ideal', 'google_pay', 'apple_pay'],
+    onChange: (event: any) => {
+      console.log('🔄 Payment method changed:', event.value?.type);
+      setSelectedPaymentMethod(event.value?.type || null);
+    },
   };
 
   return (
@@ -175,6 +195,8 @@ export default function PaymentForm(props: PaymentFormProps) {
   useEffect(() => {
     const createPaymentIntent = async () => {
       try {
+        console.log('Creating payment intent for amount:', props.amount);
+        
         const response = await fetch('/api/checkout', {
           method: 'POST',
           headers: {
@@ -183,21 +205,51 @@ export default function PaymentForm(props: PaymentFormProps) {
           body: JSON.stringify({ amount: props.amount }),
         });
 
-        const { clientSecret, error: apiError } = await response.json();
+        const data = await response.json();
+        console.log('Payment intent response:', data);
 
-        if (apiError) {
-          throw new Error(apiError);
+        if (!response.ok) {
+          throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
         }
 
-        setClientSecret(clientSecret);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (!data.clientSecret) {
+          throw new Error('No client secret received from server');
+        }
+
+        setClientSecret(data.clientSecret);
       } catch (err) {
         console.error('Failed to create payment intent:', err);
-        props.onError('Failed to initialize payment');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment';
+        props.onError(errorMessage);
       }
     };
 
     createPaymentIntent();
   }, [props.amount, props.onError]);
+
+  if (!stripePromise) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-red-900">Payment Service Unavailable</p>
+              <p className="text-sm text-red-700">Stripe is not properly configured. Please contact support.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!clientSecret) {
     return (

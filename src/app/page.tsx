@@ -36,7 +36,7 @@ export default function Home() {
         {/* Optimized Video Background from Envato Elements */}
         <VideoBackground 
           videoSrc="/honey-video.mp4"
-          fallbackImage="/honey-fallback.jpg"
+         
         />
         
         {/* Luxury Background Pattern (subtle overlay) */}
@@ -172,15 +172,15 @@ export default function Home() {
       </div>
 
       {/* Products Section */}
-      <ProductsSection />
+              <ProductsSection locale="en" />
 
       {/* Testimonials & Payment Methods Section */}
-      <TestimonialsSection />
+      <TestimonialsSection locale="en" />
 
       {/* Newsletter Signup Section */}
       <section className="py-16 bg-gradient-to-br from-yellow-50 to-orange-50">
         <div className="container mx-auto px-4">
-          <NewsletterSignup />
+          <NewsletterSignup locale="en" />
         </div>
       </section>
     </>

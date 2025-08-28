@@ -1,127 +1,108 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { products, categories, Product } from '@/data/products';
-import ProductCard from './ProductCard';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { products, categories } from '@/data/products';
+import ProductCard from '@/components/ProductCard';
 
-export default function ProductsSection() {
+interface ProductsSectionProps {
+  locale?: 'en' | 'nl' | 'pl';
+}
+
+export default function ProductsSection({ locale = 'en' }: ProductsSectionProps) {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const [cardsPerSlide, setCardsPerSlide] = useState(3);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  // Use all products from the data file (already has 10 products)
-  const allProducts = products;
-
-  const filteredProducts = selectedCategory === 'All' 
-    ? allProducts 
-    : allProducts.filter(product => {
-        const matches = product.category === selectedCategory || 
-          (product.categories && product.categories.includes(selectedCategory));
-        return matches;
-      });
-
-  // Responsive carousel logic
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setCardsPerSlide(1); // Mobile: 1 card
-      } else if (window.innerWidth < 1024) {
-        setCardsPerSlide(2); // Tablet: 2 cards
-      } else {
-        setCardsPerSlide(3); // Desktop: 3 cards
-      }
-    };
-
-    // Set initial value
-    handleResize();
-
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const totalSlides = Math.ceil(filteredProducts.length / cardsPerSlide);
-  const visibleProducts = filteredProducts.slice(currentSlide * cardsPerSlide, (currentSlide + 1) * cardsPerSlide);
-
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8,
-      rotateY: direction > 0 ? 45 : -45,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      rotateY: 0,
+  // Translation object for the section
+  const translations = {
+    en: {
+      title: "Our Premium Honey Collection",
+      description: "Discover our carefully curated selection of natural, sustainable honey products. Each jar is harvested with care and tested for the highest quality standards."
     },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8,
-      rotateY: direction < 0 ? 45 : -45,
-    }),
-  };
-
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
-
-  const paginate = (newDirection: number) => {
-    if (newDirection > 0 && currentSlide < totalSlides - 1) {
-      setDirection(1);
-      setCurrentSlide(currentSlide + 1);
-    } else if (newDirection < 0 && currentSlide > 0) {
-      setDirection(-1);
-      setCurrentSlide(currentSlide - 1);
+    nl: {
+      title: "Onze Premium Honing Collectie",
+      description: "Ontdek onze zorgvuldig geselecteerde collectie van natuurlijke, duurzame honingproducten. Elke pot wordt met zorg geoogst en getest op de hoogste kwaliteitsstandaarden."
+    },
+    pl: {
+      title: "Nasza Premium Kolekcja Miodu",
+      description: "Odkryj naszą starannie wyselekcjonowaną kolekcję naturalnych, zrównoważonych produktów miodowych. Każdy słoik jest zbierany z troską i testowany według najwyższych standardów jakości."
     }
   };
 
-  const handleDragEnd = (event: any, { offset, velocity }: PanInfo) => {
-    const swipe = swipePower(offset.x, velocity.x);
+  const t = translations[locale];
 
-    if (swipe < -swipeConfidenceThreshold) {
-      paginate(1);
-    } else if (swipe > swipeConfidenceThreshold) {
-      paginate(-1);
+  // Filter products based on selected category
+  const filteredProducts = selectedCategory === 'All' 
+    ? products 
+    : products.filter(product => 
+        product.category === selectedCategory || 
+        (product.categories && product.categories.includes(selectedCategory))
+      );
+
+  // Calculate total slides based on filtered products
+  const productsPerSlide = 3;
+  const totalSlides = Math.ceil(filteredProducts.length / productsPerSlide);
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, totalSlides]);
+
+  // Pause auto-play on hover
+  const handleMouseEnter = () => setIsAutoPlaying(false);
+  const handleMouseLeave = () => setIsAutoPlaying(true);
+
+  const paginate = (direction: number) => {
+    const newSlide = currentSlide + direction;
+    if (newSlide >= 0 && newSlide < totalSlides) {
+      setCurrentSlide(newSlide);
     }
   };
 
-  // Reset to first slide when category changes
-  useEffect(() => {
-    setCurrentSlide(0);
-  }, [selectedCategory]);
+  const handleProductClick = (productSlug: string) => {
+    const basePath = locale === 'en' ? '' : `/${locale}`;
+    router.push(`${basePath}/products/${productSlug}`);
+  };
 
-  // Reset to first slide when cards per slide changes
-  useEffect(() => {
-    setCurrentSlide(0);
-  }, [cardsPerSlide]);
+  // Get current slide products
+  const getCurrentSlideProducts = () => {
+    const startIndex = currentSlide * productsPerSlide;
+    return filteredProducts.slice(startIndex, startIndex + productsPerSlide);
+  };
 
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 via-yellow-50 to-orange-50 overflow-hidden">
-      <div className="container mx-auto px-4">
-        {/* Section Header with Animation */}
+    <section className="py-16 bg-gradient-to-br from-gray-50 via-yellow-50 to-orange-50 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-orange-400 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-amber-400 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Section Header with Enhanced Typography */}
         <motion.div 
           className="text-center mb-12"
-          initial={{ opacity: 0, y: -50 }}
+          initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-                    <motion.h2
+          <motion.h2
             className="text-4xl font-bold text-gray-900 mb-4 font-heading"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Our Premium Honey Collection
+            {t.title}
           </motion.h2>
           <motion.p
             className="text-lg text-gray-600 max-w-2xl mx-auto font-body"
@@ -129,8 +110,7 @@ export default function ProductsSection() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Discover our carefully curated selection of natural, sustainable honey products.
-            Each jar is harvested with care and tested for the highest quality standards.
+            {t.description}
           </motion.p>
         </motion.div>
 
@@ -214,7 +194,7 @@ export default function ProductsSection() {
             whileTap={{ scale: 0.9 }}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 1 }}
+            transition={{ duration: 0.6, delay: 1.2 }}
           >
             <motion.svg 
               className="w-7 h-7 text-gray-600" 
@@ -227,124 +207,105 @@ export default function ProductsSection() {
             </motion.svg>
           </motion.button>
 
-          {/* Products Carousel with 3D Transforms */}
-          <div className="overflow-hidden perspective-1000">
-            <AnimatePresence initial={false} custom={direction} mode="wait">
+          {/* Products Grid with Enhanced Carousel */}
+          <div 
+            className="overflow-hidden rounded-2xl"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <AnimatePresence mode="wait">
               <motion.div
-                key={currentSlide}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: "spring", stiffness: 500, damping: 25 },
-                  opacity: { duration: 0.1 },
-                  scale: { type: "spring", stiffness: 500, damping: 25 },
-                  rotateY: { type: "spring", stiffness: 500, damping: 25 }
+                key={`${selectedCategory}-${currentSlide}`}
+                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6"
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                transition={{ 
+                  duration: 0.6,
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30
                 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
-                onDragEnd={handleDragEnd}
-                className="flex gap-8"
               >
-                {visibleProducts.map((product, index) => (
-                  <motion.div 
-                    key={product.id}
-                    className="flex-1 min-w-0"
-                    initial={{ opacity: 0, y: 50, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ 
-                      duration: 0.3, 
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 400
-                    }}
-                    whileHover={{ 
-                      y: -10,
-                      scale: 1.02,
-                      transition: { duration: 0.1 }
-                    }}
-                  >
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))}
+                                 {getCurrentSlideProducts().map((product, index) => (
+                   <motion.div
+                     key={product.id}
+                     initial={{ opacity: 0, y: 50 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ 
+                       duration: 0.5, 
+                       delay: index * 0.1,
+                       type: "spring",
+                       stiffness: 300
+                     }}
+                     whileHover={{ 
+                       y: -10,
+                       scale: 1.02,
+                       transition: { duration: 0.2 }
+                     }}
+                     onClick={() => handleProductClick(product.slug)}
+                     className="cursor-pointer group h-full"
+                   >
+                     <ProductCard product={product} locale={locale} />
+                   </motion.div>
+                 ))}
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Enhanced Slide Indicators */}
-          <motion.div 
-            className="flex justify-center mt-8 space-x-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.2 }}
-          >
-            {Array.from({ length: totalSlides }, (_, index) => (
-              <motion.button
-                key={index}
-                onClick={() => {
-                  setDirection(index > currentSlide ? 1 : -1);
-                  setCurrentSlide(index);
-                }}
-                className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  currentSlide === index
-                    ? 'bg-yellow-600'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.8 }}
-                animate={{
-                  scale: currentSlide === index ? 1.2 : 1,
-                  backgroundColor: currentSlide === index ? "#d97706" : "#d1d5db"
-                }}
-                transition={{ duration: 0.2 }}
-              />
-            ))}
-          </motion.div>
-
-          {/* Enhanced Slide Counter */}
-          <motion.div 
-            className="text-center mt-4 text-sm text-gray-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 1.4 }}
-          >
-            <motion.span
-              key={currentSlide}
-              initial={{ opacity: 0, y: 10 }}
+          {/* Enhanced Pagination Dots */}
+          {totalSlides > 1 && (
+            <motion.div 
+              className="flex justify-center mt-8 space-x-2"
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.6, delay: 1.4 }}
             >
-              {currentSlide + 1} of {totalSlides} • {filteredProducts.length} products
-            </motion.span>
-          </motion.div>
+              {Array.from({ length: totalSlides }, (_, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentSlide 
+                      ? 'bg-yellow-600 scale-125' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                />
+              ))}
+            </motion.div>
+          )}
         </div>
 
-        {/* Empty State with Animation */}
-        {filteredProducts.length === 0 && (
-          <motion.div 
-            className="text-center py-12"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
+        {/* Call-to-Action Section */}
+        <motion.div 
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.6 }}
+        >
+          {/* Assuming Link is from next/link or a similar component */}
+          {/* For now, using a simple anchor tag as a placeholder */}
+          <a
+            href={locale === 'en' ? '/products' : `/${locale}/products`}
+            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl group"
           >
-            <motion.div 
-              className="text-6xl mb-4"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            <span className="mr-2">
+              {locale === 'en' ? 'View All Products' : 
+               locale === 'nl' ? 'Bekijk Alle Producten' : 
+               'Zobacz Wszystkie Produkty'}
+            </span>
+            <motion.svg 
+              className="w-5 h-5 group-hover:translate-x-1 transition-transform" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
             >
-              🍯
-            </motion.div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No products found
-            </h3>
-            <p className="text-gray-600">
-              Try selecting a different category or check back later.
-            </p>
-          </motion.div>
-        )}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </motion.svg>
+          </a>
+        </motion.div>
       </div>
     </section>
   );

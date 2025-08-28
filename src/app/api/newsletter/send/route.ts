@@ -132,10 +132,11 @@ export async function POST(request: NextRequest) {
       campaignId: campaignRef.id
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Newsletter send error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json(
-      { error: `Failed to send newsletter: ${error.message}` },
+      { error: `Failed to send newsletter: ${errorMessage}` },
       { status: 500 }
     );
   }

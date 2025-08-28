@@ -54,7 +54,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userId, orderAmount } = await request.json();
-    console.log('Loyalty points update request:', { userId, orderAmount });
 
     if (!userId || !orderAmount) {
       return NextResponse.json({ error: 'User ID and order amount are required' }, { status: 400 });
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
     let currentData;
     if (loyaltyDoc.exists()) {
       currentData = loyaltyDoc.data();
-      console.log('Existing loyalty data:', currentData);
     } else {
       currentData = {
         userId,
@@ -77,7 +75,6 @@ export async function POST(request: NextRequest) {
         pointsUsed: 0,
         createdAt: serverTimestamp()
       };
-      console.log('Creating new loyalty data:', currentData);
     }
 
     // Calculate new values
@@ -112,10 +109,7 @@ export async function POST(request: NextRequest) {
       updatedAt: serverTimestamp()
     };
 
-    console.log('Updated loyalty data:', updatedData);
     await setDoc(loyaltyRef, updatedData);
-
-    console.log('Points earned this order:', pointsEarnedThisOrder);
 
     return NextResponse.json({
       success: true,
@@ -133,12 +127,10 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('PUT request body:', body);
     
     const { userId, discountAmount } = body;
 
     if (!userId || !discountAmount) {
-      console.log('Validation failed - userId:', userId, 'discountAmount:', discountAmount);
       return NextResponse.json({ error: 'User ID and discount amount are required' }, { status: 400 });
     }
 

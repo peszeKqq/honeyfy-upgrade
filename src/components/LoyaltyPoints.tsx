@@ -32,18 +32,12 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
       
       try {
         setLoading(true);
-        console.log('Fetching loyalty points for user:', state.user.id);
         const response = await fetch(`/api/loyalty/points?userId=${state.user.id}`);
         const data = await response.json();
-        
-        console.log('Loyalty points response:', data);
         
         if (response.ok) {
           setLoyaltyData(data);
           setShowLoyalty(data.discountAvailable > 0);
-          console.log('Loyalty data set:', data);
-        } else {
-          console.error('Error fetching loyalty points:', data.error);
         }
       } catch (error) {
         console.error('Error fetching loyalty points:', error);
@@ -56,26 +50,17 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
   }, [state.user?.id]);
 
   const handleApplyDiscount = async () => {
-    console.log('handleApplyDiscount called with:', {
-      userId: state.user?.id,
-      discountAvailable: loyaltyData.discountAvailable,
-      totalAmount
-    });
-    
     if (!state.user?.id || loyaltyData.discountAvailable === 0) {
-      console.log('Early return - user not logged in or no discount available');
       return;
     }
 
     const discountToApply = Math.min(loyaltyData.discountAvailable, totalAmount);
-    console.log('Discount to apply:', discountToApply);
     
     try {
       const requestBody = {
         userId: state.user.id,
         discountAmount: discountToApply
       };
-      console.log('Sending request body:', requestBody);
       
       const response = await fetch('/api/loyalty/points', {
         method: 'PUT',
@@ -92,8 +77,6 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
         setAppliedDiscount(discountToApply);
         onDiscountApplied(discountToApply);
         setShowLoyalty(false);
-      } else {
-        console.error('Error applying discount:', data.error);
       }
     } catch (error) {
       console.error('Error applying discount:', error);
@@ -118,15 +101,8 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
   }
 
   if (!state.user) {
-    console.log('No user logged in, returning null');
     return null;
   }
-  
-  // Debug button to check current loyalty data
-  const debugLoyaltyData = () => {
-    console.log('Current loyalty data:', loyaltyData);
-    console.log('User ID:', state.user?.id);
-  };
   
   // Manual refresh function
   const refreshLoyaltyData = async () => {
@@ -134,18 +110,12 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
     
     try {
       setLoading(true);
-      console.log('Manually refreshing loyalty points for user:', state.user.id);
       const response = await fetch(`/api/loyalty/points?userId=${state.user.id}`);
       const data = await response.json();
-      
-      console.log('Manual refresh response:', data);
       
       if (response.ok) {
         setLoyaltyData(data);
         setShowLoyalty(data.discountAvailable > 0);
-        console.log('Loyalty data refreshed:', data);
-      } else {
-        console.error('Error refreshing loyalty points:', data.error);
       }
     } catch (error) {
       console.error('Error refreshing loyalty points:', error);
@@ -166,26 +136,20 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
             </span>
             Loyalty Points
           </h3>
-          <div className="flex space-x-2">
-            <button
-              onClick={debugLoyaltyData}
-              className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-600"
-            >
-              Debug
-            </button>
-            <button
-              onClick={refreshLoyaltyData}
-              className="text-xs bg-blue-200 hover:bg-blue-300 px-2 py-1 rounded text-blue-600"
-            >
-              Refresh
-            </button>
-          </div>
+                     <div className="flex space-x-2">
+             <button
+               onClick={refreshLoyaltyData}
+               className="text-xs bg-blue-200 hover:bg-blue-300 px-2 py-1 rounded text-blue-600"
+             >
+               Refresh
+             </button>
+           </div>
         </div>
         <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 border border-yellow-200">
           <div className="text-center">
             <p className="text-yellow-800 font-medium mb-2">Start earning loyalty points!</p>
             <p className="text-sm text-yellow-700 mb-3">
-              Complete this purchase to earn {totalAmount} points for your next order.
+              Complete this purchase to earn {Math.round(totalAmount)} points for your next order.
             </p>
             <div className="text-xs text-yellow-600">
               <p>• Earn 1 point for every €1 spent</p>
@@ -211,7 +175,7 @@ export default function LoyaltyPoints({ totalAmount, onDiscountApplied, onDiscou
           <div className="text-center">
             <p className="text-blue-800 font-medium mb-2">Keep earning points!</p>
             <p className="text-sm text-blue-700 mb-3">
-              You have {loyaltyData.totalPoints} total points. Complete this purchase to earn {totalAmount} more points.
+              You have {Math.round(loyaltyData.totalPoints)} total points. Complete this purchase to earn {Math.round(totalAmount)} more points.
             </p>
             <div className="text-xs text-blue-600">
               <p>• Earn 1 point for every €1 spent</p>

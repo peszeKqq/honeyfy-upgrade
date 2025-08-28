@@ -3,10 +3,18 @@
 import { useCart } from '@/contexts/CartContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { getCartTranslation, formatCartMessage } from '@/lib/cartTranslations';
+import { getTranslatedProduct } from '@/lib/productTranslations';
 
-export default function CartSidebar() {
+interface CartSidebarProps {
+  locale?: 'en' | 'nl' | 'pl';
+}
+
+export default function CartSidebar({ locale = 'en' }: CartSidebarProps) {
   const { state, removeItem, updateQuantity, clearCart, closeCart, getTotalPrice } = useCart();
   const [isVisible, setIsVisible] = useState(false);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -20,7 +28,12 @@ export default function CartSidebar() {
 
   const handleCheckout = () => {
     closeCart();
-    router.push('/checkout');
+    const checkoutPath = locale === 'en' ? '/checkout' : `/${locale}/checkout`;
+    router.push(checkoutPath);
+  };
+
+  const handleImageError = (productId: string) => {
+    setImageErrors(prev => ({ ...prev, [productId]: true }));
   };
 
   if (!isVisible) return null;
@@ -59,8 +72,8 @@ export default function CartSidebar() {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Shopping Cart</h2>
-                  <p className="text-yellow-100 text-sm">Your honey selection</p>
+                  <h2 className="text-xl font-bold text-white">{getCartTranslation(locale, 'shoppingCart')}</h2>
+                  <p className="text-yellow-100 text-sm">{getCartTranslation(locale, 'yourHoneySelection')}</p>
                 </div>
               </div>
               <button
@@ -86,91 +99,109 @@ export default function CartSidebar() {
                     <span className="text-lg">🛒</span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Your cart is empty</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{getCartTranslation(locale, 'yourCartIsEmpty')}</h3>
                 <p className="text-gray-600 mb-8 max-w-sm mx-auto">
-                  Add some delicious honey to get started! Our premium selection awaits you.
+                  {getCartTranslation(locale, 'emptyCartMessage')}
                 </p>
                 <button
                   onClick={closeCart}
                   className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 >
-                  Continue Shopping
+                  {getCartTranslation(locale, 'continueShopping')}
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
-                {state.items.map((item, index) => (
-                  <div 
-                    key={item.product.id} 
-                    className="group bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="flex items-center space-x-4">
-                      {/* Enhanced Product Image */}
-                      <div className="flex-shrink-0 relative">
-                        <div className="w-20 h-20 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl flex items-center justify-center shadow-inner">
-                          <span className="text-3xl">{item.product.image}</span>
-                        </div>
-                        {item.product.originalPrice && (
-                          <div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                            SALE
+                {state.items.map((item, index) => {
+                  // Get translated product name
+                  const translatedProduct = getTranslatedProduct(item.product.slug, locale);
+                  const productName = translatedProduct?.name || item.product.name;
+                  
+                  return (
+                    <div 
+                      key={item.product.id} 
+                      className="group bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <div className="flex items-center space-x-4">
+                        {/* Enhanced Product Image */}
+                        <div className="flex-shrink-0 relative">
+                          <div className="w-20 h-20 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl flex items-center justify-center shadow-inner overflow-hidden">
+                            {!imageErrors[item.product.id] && item.product.image.startsWith('/') ? (
+                              <Image
+                                src={item.product.image}
+                                alt={productName}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-contain p-2"
+                                onError={() => handleImageError(item.product.id)}
+                                priority={false}
+                              />
+                            ) : (
+                              <span className="text-2xl">{item.product.image}</span>
+                            )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Enhanced Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-yellow-600 transition-colors">
-                          {item.product.name}
-                        </h3>
-                        <p className="text-xs text-gray-500 mb-1">{item.product.weight}</p>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg font-bold text-yellow-600">
-                            €{(item.product.originalPrice || item.product.price).toFixed(2)}
-                          </span>
                           {item.product.originalPrice && (
-                            <span className="text-sm text-gray-400 line-through">
-                              €{item.product.originalPrice.toFixed(2)}
-                            </span>
+                            <div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                              {getCartTranslation(locale, 'sale')}
+                            </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Enhanced Quantity Controls */}
-                      <div className="flex items-center space-x-2">
+                        {/* Enhanced Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-yellow-600 transition-colors">
+                            {productName}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-1">{item.product.weight}</p>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-bold text-yellow-600">
+                              €{item.product.price.toFixed(2)}
+                            </span>
+                            {item.product.originalPrice && (
+                              <span className="text-sm text-gray-400 line-through">
+                                €{item.product.originalPrice.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Enhanced Quantity Controls */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm"
+                          >
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <span className="w-8 text-center text-sm font-bold text-gray-900 bg-gray-50 rounded-full py-1">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className="w-8 h-8 bg-gradient-to-br from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm"
+                          >
+                            <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Enhanced Remove Button */}
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm"
+                          onClick={() => removeItem(item.product.id)}
+                          className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm group/remove"
                         >
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                          <svg className="w-4 h-4 text-red-500 group-hover/remove:text-red-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-gray-900 bg-gray-50 rounded-full py-1">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          className="w-8 h-8 bg-gradient-to-br from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm"
-                        >
-                          <svg className="w-4 h-4 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                        </button>
                       </div>
-
-                      {/* Enhanced Remove Button */}
-                      <button
-                        onClick={() => removeItem(item.product.id)}
-                        className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-sm group/remove"
-                      >
-                        <svg className="w-4 h-4 text-red-500 group-hover/remove:text-red-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -184,15 +215,15 @@ export default function CartSidebar() {
               {/* Total */}
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <span className="text-lg font-semibold text-gray-900">Total:</span>
-                  <p className="text-sm text-gray-600">Free shipping on orders over €50</p>
+                  <span className="text-lg font-semibold text-gray-900">{getCartTranslation(locale, 'total')}</span>
+                  <p className="text-sm text-gray-600">{getCartTranslation(locale, 'freeShippingMessage')}</p>
                 </div>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-yellow-600">
                     €{getTotalPrice().toFixed(2)}
                   </span>
                   {getTotalPrice() < 50 && (
-                    <p className="text-xs text-gray-500">Add €{(50 - getTotalPrice()).toFixed(2)} for free shipping</p>
+                    <p className="text-xs text-gray-500">{formatCartMessage(getCartTranslation(locale, 'addForFreeShipping'), 50 - getTotalPrice())}</p>
                   )}
                 </div>
               </div>
@@ -204,7 +235,7 @@ export default function CartSidebar() {
                   className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    <span>Proceed to Checkout</span>
+                    <span>{getCartTranslation(locale, 'proceedToCheckout')}</span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -214,7 +245,7 @@ export default function CartSidebar() {
                   onClick={clearCart}
                   className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md"
                 >
-                  Clear Cart
+                  {getCartTranslation(locale, 'clearCart')}
                 </button>
               </div>
             </div>

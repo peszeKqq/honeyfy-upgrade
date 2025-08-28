@@ -3,29 +3,46 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
+import { getDashboardTranslation } from '@/lib/dashboardTranslations';
+import { usePathname } from 'next/navigation';
 
-function TopBarContent() {
+export default function TopBar() {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+  const pathname = usePathname();
+  
+  // Detect locale from pathname
+  const detectLocale = () => {
+    const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+    return localeMatch ? localeMatch[1] : 'en';
+  };
+  
+  const locale = detectLocale();
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const notifications = [
     {
-      text: "Customers rate us ⭐️ 9.9/10",
+      text: getDashboardTranslation(locale, "topbar.customerRating"),
       icon: "⭐️",
       color: "from-yellow-400 to-yellow-600"
     },
     {
-      text: "Order before 2 p.m.? Delivered tomorrow 🚀",
+      text: getDashboardTranslation(locale, "topbar.fastDelivery"),
       icon: "🚀",
       color: "from-green-400 to-green-600"
     },
     {
-      text: "Gratis bezorgd from €69",
+      text: getDashboardTranslation(locale, "topbar.freeShipping"),
       icon: "📦",
       color: "from-blue-400 to-blue-600"
     },
     {
-      text: "Friendly Customer Service ❤️",
+      text: getDashboardTranslation(locale, "topbar.customerService"),
       icon: "❤️",
       color: "from-pink-400 to-pink-600"
     }
@@ -78,8 +95,13 @@ function TopBarContent() {
     setBannerVisible(false);
   };
 
+  // Don't render anything on server
+  if (!isClient) {
+    return null;
+  }
+
   return (
-    <>
+    <div data-topbar="true" className="topbar-container">
       {/* Notification Banner */}
       <AnimatePresence>
         {bannerVisible && (
@@ -117,7 +139,7 @@ function TopBarContent() {
                 <button
                   onClick={handleCloseBanner}
                   className="ml-4 p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                  aria-label="Close notification"
+                  aria-label={getDashboardTranslation(locale, "topbar.closeNotification")}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -131,21 +153,6 @@ function TopBarContent() {
 
       {/* Header */}
       <Header bannerVisible={bannerVisible} />
-    </>
+    </div>
   );
-}
-
-// Client-side wrapper to prevent hydration issues
-export default function TopBar() {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return null; // Don't render anything on server
-  }
-
-  return <TopBarContent />;
 }

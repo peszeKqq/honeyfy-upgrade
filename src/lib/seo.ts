@@ -4,7 +4,7 @@ import { Metadata } from 'next';
 export const siteConfig = {
   name: 'Honeyfy',
   description: 'Premium Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products.',
-  url: 'https://honeyfy.nl',
+  url: 'http://localhost:3000',
   ogImage: '/logo.png',
   twitterHandle: '@honeyfy_nl',
   locale: 'en_US',
@@ -228,7 +228,7 @@ export function generateProductMetaTags(product: ProductSEO) {
 export function generateHomepageMetaTags() {
   return generateMetaTags({
     title: 'Premium Polish Honey | Buy Organic Honey Online',
-    description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €50.',
+    description: 'Discover the finest Polish honey delivered to the Netherlands. Organic, pure, and sustainably sourced honey products. Free shipping on orders over €69.',
     keywords: 'Polish honey, organic honey, buy honey online, Dutch honey, premium honey, honey delivery Netherlands, pure honey, natural honey, sustainable honey',
     url: siteConfig.url,
     type: 'website',

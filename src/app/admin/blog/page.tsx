@@ -96,13 +96,15 @@ export default function AdminBlogPage() {
 
       console.log('All posts:', postsData);
       setPosts(postsData);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching posts:', error);
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          code: (error as any).code,
+          message: error.message,
+          stack: error.stack
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,7 @@ export default function AdminBlogPage() {
       setEditingPost(null);
       resetForm();
       fetchPosts();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving post:', error);
     }
   };
@@ -166,7 +168,7 @@ export default function AdminBlogPage() {
       if (!db) return;
       await deleteDoc(doc(db, 'blog_posts', postId));
       fetchPosts();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting post:', error);
     }
   };
@@ -179,7 +181,7 @@ export default function AdminBlogPage() {
         publishedAt: !post.isPublished ? serverTimestamp() : null
       });
       fetchPosts();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating post:', error);
     }
   };
@@ -263,7 +265,7 @@ export default function AdminBlogPage() {
       });
       
       setPendingComments(commentsData);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching pending comments:', error);
     } finally {
       setCommentsLoading(false);
@@ -282,7 +284,7 @@ export default function AdminBlogPage() {
       });
       
       fetchPendingComments();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error approving comment:', error);
     }
   };
@@ -299,7 +301,7 @@ export default function AdminBlogPage() {
       });
       
       fetchPendingComments();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error rejecting comment:', error);
     }
   };
@@ -438,13 +440,15 @@ export default function AdminBlogPage() {
                       size: productsSnapshot.size
                     });
                     
-                  } catch (error) {
+                  } catch (error: unknown) {
                     console.error('❌ Error testing permissions:', error);
-                    console.error('Error details:', {
-                      code: error.code,
-                      message: error.message,
-                      stack: error.stack
-                    });
+                    if (error instanceof Error) {
+                      console.error('Error details:', {
+                        code: (error as any).code,
+                        message: error.message,
+                        stack: error.stack
+                      });
+                    }
                   }
                 }}
                 className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 text-sm"

@@ -6,17 +6,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
+import { getTranslatedProduct, getTranslatedCategory } from '@/lib/productTranslations';
 
 interface ProductCardProps {
   product: Product;
+  locale?: 'en' | 'nl' | 'pl';
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, locale = 'en' }: ProductCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
+
+  // Get translated product data
+  const translatedProduct = getTranslatedProduct(product.slug, locale);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent navigation when clicking add to cart
@@ -26,12 +31,20 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const handleCardClick = () => {
-    router.push(`/products/${product.slug}`);
+    let localePath = '';
+    
+    if (locale === 'nl') {
+      localePath = '/nl';
+    } else if (locale === 'pl') {
+      localePath = '/pl';
+    }
+    
+    router.push(`${localePath}/products/${product.slug}`);
   };
 
   return (
     <motion.div 
-      className="card-product cursor-pointer"
+      className="card-product cursor-pointer bg-white rounded-xl shadow-lg overflow-hidden h-full flex flex-col"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ 
@@ -111,7 +124,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Product Info with Staggered Animations */}
       <motion.div 
-        className="p-4 sm:p-6"
+        className="p-4 sm:p-6 flex-1 flex flex-col"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
@@ -122,7 +135,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           whileHover={{ x: 5 }}
           transition={{ type: "spring", stiffness: 400 }}
         >
-          {product.category}
+          {getTranslatedCategory(product.category, locale)}
         </motion.div>
 
         {/* Name */}
@@ -131,17 +144,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           whileHover={{ color: "#d97706" }}
           transition={{ duration: 0.2 }}
         >
-          {product.name}
+          {translatedProduct?.name || product.name}
         </motion.h3>
 
         {/* Description */}
         <motion.p 
-          className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2"
+          className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 flex-shrink-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {product.description}
+          {translatedProduct?.description || product.description}
         </motion.p>
 
         {/* Weight */}
@@ -185,12 +198,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Features with Hover Effects */}
         <motion.div 
-          className="flex flex-wrap gap-1 mb-3 sm:mb-4"
+          className="flex flex-wrap gap-1 mb-3 sm:mb-4 flex-shrink-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          {product.features.slice(0, 2).map((feature, index) => (
+          {(translatedProduct?.features || product.features).slice(0, 2).map((feature, index) => (
             <motion.span 
               key={index}
               className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full"
@@ -238,7 +251,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Enhanced Add to Cart Button */}
         <motion.div 
-          className="relative"
+          className="relative mt-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}

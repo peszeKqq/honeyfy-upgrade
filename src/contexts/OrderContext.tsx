@@ -177,28 +177,38 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const orders = await orderService.getUserOrders(userId);
       
-      // Only use localStorage as fallback if Firebase fails
-      if (orders.length === 0) {
-        console.log('⚠️ Firebase returned empty orders, checking localStorage...');
-        const localStorageOrders = loadOrdersFromStorage();
-        if (localStorageOrders.orders.length > 0) {
-          dispatch({ type: 'SET_ORDERS', payload: localStorageOrders.orders });
-          console.log('✅ Fallback: Loaded orders from localStorage:', localStorageOrders.orders.length);
-          return;
-        }
-      }
+      console.log('🔥 Firebase returned orders for user', userId + ':', orders.length);
       
-      dispatch({ type: 'SET_ORDERS', payload: orders as Order[] });
-      console.log('✅ Loaded orders from Firebase:', orders.length);
+      // Always check localStorage as well for testing
+      const localStorageOrders = loadOrdersFromStorage();
+      console.log('💾 localStorage has orders:', localStorageOrders.orders.length);
+      
+      // Filter localStorage orders for this specific user
+      const userLocalOrders = localStorageOrders.orders.filter(order => order.userId === userId);
+      console.log('💾 User-specific localStorage orders:', userLocalOrders.length);
+      
+      // Combine Firebase and localStorage orders, removing duplicates
+      const allOrders = [...orders, ...userLocalOrders];
+      const uniqueOrders = allOrders.filter((order, index, self) => 
+        index === self.findIndex(o => o.id === order.id)
+      );
+      
+      if (uniqueOrders.length > 0) {
+        dispatch({ type: 'SET_ORDERS', payload: uniqueOrders as Order[] });
+        console.log('✅ Loaded combined orders for user', userId + ':', uniqueOrders.length);
+      } else {
+        console.log('⚠️ No orders found in Firebase or localStorage for user', userId);
+      }
     } catch (error) {
       console.error('❌ Error loading user orders from Firebase:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load orders from Firebase' });
       
       // Fallback to localStorage only on error
       const localStorageOrders = loadOrdersFromStorage();
-      if (localStorageOrders.orders.length > 0) {
-        dispatch({ type: 'SET_ORDERS', payload: localStorageOrders.orders });
-        console.log('✅ Error fallback: Loaded orders from localStorage:', localStorageOrders.orders.length);
+      const userLocalOrders = localStorageOrders.orders.filter(order => order.userId === userId);
+      if (userLocalOrders.length > 0) {
+        dispatch({ type: 'SET_ORDERS', payload: userLocalOrders });
+        console.log('✅ Error fallback: Loaded user orders from localStorage:', userLocalOrders.length);
       }
     }
   }, [dispatch]);
@@ -239,6 +249,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
+      console.log('🔄 Adding order for user:', orderData.userId);
+      
       // Add to Firebase
       const orderId = await orderService.addOrder(orderData);
       
@@ -252,32 +264,43 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         };
         
         dispatch({ type: 'ADD_ORDER', payload: newOrder });
-        console.log('✅ Order added successfully to Firebase');
+        console.log('✅ Order added successfully to Firebase with ID:', orderId);
+        
+        // Also save to localStorage as backup
+        if (typeof window !== 'undefined') {
+          const currentOrders = JSON.parse(localStorage.getItem('honeyfy-orders') || '[]');
+          currentOrders.unshift(newOrder);
+          localStorage.setItem('honeyfy-orders', JSON.stringify(currentOrders));
+          console.log('💾 Order also saved to localStorage as backup');
+        }
       } else {
         // Fallback to localStorage if Firebase fails
         const fallbackOrder: Order = {
           ...orderData,
-          id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
         
         dispatch({ type: 'ADD_ORDER', payload: fallbackOrder });
-        console.log('⚠️ Firebase unavailable, order saved to localStorage');
+        console.log('⚠️ Firebase unavailable, order saved to localStorage with ID:', fallbackOrder.id);
       }
     } catch (error) {
-      console.error('Error adding order:', error);
+      console.error('❌ Error adding order:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to add order' });
       
       // Fallback to localStorage
       const fallbackOrder: Order = {
         ...orderData,
-        id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
       dispatch({ type: 'ADD_ORDER', payload: fallbackOrder });
+      console.log('💾 Fallback: Order saved to localStorage with ID:', fallbackOrder.id);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   }, [dispatch]);
 
@@ -324,7 +347,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   // Get orders for specific user (from local state)
   const getUserOrders = useCallback((userId: string): Order[] => {
-    return state.orders.filter(order => order.userId === userId);
+    const userOrders = state.orders.filter(order => order.userId === userId);
+    console.log('getUserOrders called for userId:', userId);
+    console.log('Total orders in state:', state.orders.length);
+    console.log('User orders found:', userOrders.length);
+    return userOrders;
   }, [state.orders]);
 
   // Get order by ID (from local state)

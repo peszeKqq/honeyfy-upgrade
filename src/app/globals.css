@@ -69,7 +69,8 @@
   --font-cormorant: 'Cormorant Garamond', serif;
 }
 
-@theme inline {
+/* CSS Custom Properties for Tailwind CSS v4 */
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-honeyfy-primary: var(--honeyfy-primary);
@@ -208,38 +209,92 @@ body {
 
 /* Enhanced Button Styles */
 .btn-primary {
-  @apply bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 
-         text-black font-bold py-3 px-8 rounded-full transition-all duration-300 
-         shadow-lg hover:shadow-xl hover:shadow-yellow-500/25 transform hover:scale-105 
-         border-2 border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2;
+  background: linear-gradient(to right, #eab308, #ca8a04);
+  color: black;
+  font-weight: bold;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  transition: all 0.3s;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 2px solid #facc15;
+  outline: none;
   font-family: var(--font-cormorant);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #facc15, #eab308);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: scale(1.05);
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 2px #eab308, 0 0 0 4px white;
 }
 
 .btn-secondary {
-  @apply border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black 
-         font-bold py-3 px-8 rounded-full transition-all duration-300 
-         hover:shadow-lg hover:shadow-yellow-500/25 transform hover:scale-105 
-         focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2;
+  border: 2px solid #eab308;
+  color: #eab308;
+  font-weight: bold;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  transition: all 0.3s;
+  outline: none;
   font-family: var(--font-cormorant);
 }
 
+.btn-secondary:hover {
+  background: #eab308;
+  color: black;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.btn-secondary:focus {
+  box-shadow: 0 0 0 2px #eab308, 0 0 0 4px white;
+}
+
 .btn-ghost {
-  @apply text-gray-300 hover:text-yellow-400 transition-colors duration-200 
-         font-medium focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2;
+  color: #d1d5db;
+  transition: color 0.2s;
+  font-weight: 500;
+  outline: none;
+}
+
+.btn-ghost:hover {
+  color: #facc15;
+}
+
+.btn-ghost:focus {
+  box-shadow: 0 0 0 2px #eab308, 0 0 0 4px white;
 }
 
 /* Card Styles */
 .card-luxury {
-  @apply bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl 
-         rounded-2xl border border-yellow-500/20 hover:border-yellow-500/40 
-         transition-all duration-500 hover:transform hover:scale-105 
-         hover:shadow-2xl hover:shadow-yellow-500/10;
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.5), rgba(17, 24, 39, 0.5));
+  backdrop-filter: blur(24px);
+  border-radius: 1rem;
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  transition: all 0.5s;
+}
+
+.card-luxury:hover {
+  border-color: rgba(234, 179, 8, 0.4);
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 .card-product {
-  @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden 
-         transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/10 
-         transform hover:-translate-y-2;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.card-product:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-0.5rem);
 }
 
 /* Text Styles */

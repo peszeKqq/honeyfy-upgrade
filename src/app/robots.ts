@@ -16,6 +16,6 @@ export default function robots(): MetadataRoute.Robots {
         '/auth/',
       ],
     },
-    sitemap: 'https://honeyfy.nl/sitemap.xml',
+    sitemap: 'http://localhost:3000/sitemap.xml',
   };
 }
