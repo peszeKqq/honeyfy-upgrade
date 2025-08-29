@@ -92,7 +92,7 @@ export default function Home() {
                     alt="Honeyfy Logo" 
                     width={500} 
                     height={500} 
-                    className="mx-auto h-56 w-auto object-contain drop-shadow-2xl opacity-75 relative z-10"
+                    className="mx-auto h-56 w-auto object-contain drop-shadow-2xl opacity-75 relative z-10 w-auto h-auto"
                     priority
                     quality={100}
                   />

@@ -424,7 +424,7 @@ export default function DutchAboutPage() {
                     <div>
                       <p className="font-semibold text-gray-900">Contact</p>
                       <p className="text-gray-600">Email: honeyfy.online@gmail.com</p>
-                      <p className="text-gray-600">Telefoon: +31 (0)10 123 4567</p>
+                      <p className="text-gray-600">Telefoon: +31 685 713 773</p>
                     </div>
                   </div>
                 </div>

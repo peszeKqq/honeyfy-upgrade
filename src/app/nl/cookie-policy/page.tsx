@@ -180,7 +180,7 @@ export default function DutchCookiePolicyPage() {
                   <p className="text-gray-700">
                     <strong>E-mail:</strong> privacy@honeyfy.com<br />
                     <strong>Adres:</strong> Honeyfy, Nederland<br />
-                    <strong>Telefoon:</strong> +31 (0) 123 456 789
+                    <strong>Telefoon:</strong> +31 685 713 773
                   </p>
                 </div>
               </section>

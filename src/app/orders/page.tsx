@@ -5,14 +5,32 @@ import { useOrders } from '@/contexts/OrderContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getOrdersTranslation } from '@/lib/ordersTranslations';
+import { usePathname } from 'next/navigation';
+import { products } from '@/data/products';
 
 export default function OrdersPage() {
   const { state: authState } = useAuth();
   const { getUserOrders, loadUserOrders, loadAllOrders, addOrder, state: orderState } = useOrders();
   const router = useRouter();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 6;
+  
+  // Detect locale from pathname
+  const detectLocale = () => {
+    const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+    return localeMatch ? localeMatch[1] : 'en';
+  };
+  
+  const locale = detectLocale();
+
+  // Function to get product image by name
+  const getProductImage = (productName: string) => {
+    const product = products.find(p => p.name === productName);
+    return product ? product.image : '/honey-forest.webp'; // fallback image
+  };
 
   // Set client flag to prevent hydration mismatch
   useEffect(() => {
@@ -139,14 +157,14 @@ export default function OrdersPage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
                          <div>
-               <h1 className="text-3xl font-bold text-gray-900 font-heading">Order History</h1>
-               <p className="text-gray-600 mt-1 font-body">Check what you've ordered</p>
+               <h1 className="text-3xl font-bold text-gray-900 font-heading">{getOrdersTranslation(locale, 'orderHistory')}</h1>
+               <p className="text-gray-600 mt-1 font-body">{getOrdersTranslation(locale, 'checkWhatOrdered')}</p>
              </div>
             <Link
-              href="/products"
+              href={locale === 'en' ? "/products" : `/${locale}/products`}
               className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              🍯 Shop Now
+              {getOrdersTranslation(locale, 'shopNow')}
             </Link>
           </div>
         </div>
@@ -157,18 +175,18 @@ export default function OrdersPage() {
          {!isClient || orderState.isLoading ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                         <p className="text-gray-600 font-body">Loading your orders...</p>
+                         <p className="text-gray-600 font-body">{getOrdersTranslation(locale, 'loadingOrders')}</p>
           </div>
         ) : userOrders.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📦</div>
-                         <h2 className="text-2xl font-bold text-gray-900 mb-2 font-heading">No Orders Yet</h2>
-             <p className="text-gray-600 mb-6 font-body">You haven't placed any orders yet.</p>
+                         <h2 className="text-2xl font-bold text-gray-900 mb-2 font-heading">{getOrdersTranslation(locale, 'noOrdersYet')}</h2>
+             <p className="text-gray-600 mb-6 font-body">{getOrdersTranslation(locale, 'noOrdersMessage')}</p>
             <Link
-              href="/products"
+              href={locale === 'en' ? "/products" : `/${locale}/products`}
               className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold"
             >
-              Start Shopping
+              {getOrdersTranslation(locale, 'startShopping')}
             </Link>
           </div>
                  ) : (
@@ -181,7 +199,7 @@ export default function OrdersPage() {
                 <div className="bg-gray-50 px-6 py-4 border-b">
                   <div className="flex items-center justify-between">
                     <div>
-                                             <h3 className="font-semibold text-gray-900 font-body">Order #{order.id.slice(-8)}</h3>
+                                             <h3 className="font-semibold text-gray-900 font-body">{getOrdersTranslation(locale, 'order')} #{order.id.slice(-8)}</h3>
                        <p className="text-sm text-gray-600 font-body">{formatDate(order.createdAt)}</p>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -200,13 +218,23 @@ export default function OrdersPage() {
                   <div className="space-y-4">
                     {order.items.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center">
-                          <span className="text-2xl">🍯</span>
+                        <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center overflow-hidden">
+                          <img 
+                            src={getProductImage(item.name)} 
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to honey emoji if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = '<span class="text-2xl">🍯</span>';
+                            }}
+                          />
                         </div>
                         <div className="flex-1">
                                                      <h4 className="font-medium text-gray-900 font-body">{item.name}</h4>
                            <p className="text-sm text-gray-600 font-body">
-                             Quantity: {item.quantity} × €{item.price.toFixed(2)}
+                             {getOrdersTranslation(locale, 'quantity')}: {item.quantity} × €{item.price.toFixed(2)}
                            </p>
                         </div>
                         <div className="text-right">
@@ -221,7 +249,7 @@ export default function OrdersPage() {
                   {/* Shipping Address */}
                   {order.shippingAddress && (
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-2">Shipping Address</h4>
+                      <h4 className="font-medium text-gray-900 mb-2">{getOrdersTranslation(locale, 'shippingAddress')}</h4>
                       <p className="text-sm text-gray-600">
                         {order.shippingAddress.name}<br />
                         {order.shippingAddress.address}<br />
@@ -249,7 +277,7 @@ export default function OrdersPage() {
                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                      }`}
                    >
-                     ← Previous
+                     {getOrdersTranslation(locale, 'previous')}
                    </button>
 
                    {/* Page Numbers */}
@@ -279,13 +307,13 @@ export default function OrdersPage() {
                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                      }`}
                    >
-                     Next →
+                     {getOrdersTranslation(locale, 'next')}
                    </button>
                  </nav>
 
                  {/* Page Info */}
                  <div className="ml-6 text-sm text-gray-600">
-                   Page {currentPage} of {totalPages} • Showing {startIndex + 1}-{Math.min(endIndex, userOrders.length)} of {userOrders.length} orders
+                   {getOrdersTranslation(locale, 'page')} {currentPage} {getOrdersTranslation(locale, 'of')} {totalPages} • {getOrdersTranslation(locale, 'showing')} {startIndex + 1}-{Math.min(endIndex, userOrders.length)} {getOrdersTranslation(locale, 'of')} {userOrders.length} {getOrdersTranslation(locale, 'orders')}
                  </div>
                </div>
              )}

@@ -26,7 +26,6 @@ export default function DashboardPage() {
   const [loyaltyData, setLoyaltyData] = useState({
     totalPoints: 0,
     availablePoints: 0,
-    totalSpent: 0,
     discountAvailable: 0,
     pointsUsed: 0
   });
@@ -246,14 +245,10 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="grid grid-cols-1 gap-3">
+                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                      <p className="text-blue-800 font-medium text-xs">{getDashboardTranslation(locale, "dashboard.availableDiscount")}</p>
                      <p className="text-lg font-bold text-blue-600">€{Math.round(loyaltyData.discountAvailable || 0)}</p>
-                   </div>
-                   <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                     <p className="text-green-800 font-medium text-xs">{getDashboardTranslation(locale, "dashboard.totalSpent")}</p>
-                     <p className="text-lg font-bold text-green-600">€{(loyaltyData.totalSpent || 0).toFixed(2)}</p>
                    </div>
                 </div>
 
@@ -386,15 +381,15 @@ export default function DashboardPage() {
             <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
               <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden shadow-md">
                 <img 
-                  src="/logoheader.png" 
-                  alt="Raw Clover Honey" 
+                  src="/beepollen.webp" 
+                  alt="Bee Pollen" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Raw Clover Honey</h4>
-              <p className="text-sm text-gray-600 mb-4">Pure and unprocessed</p>
+              <h4 className="font-semibold text-gray-900 mb-2">Bee Pollen</h4>
+              <p className="text-sm text-gray-600 mb-4">Nature's complete superfood</p>
                              <Link
-                 href={locale === 'en' ? "/products/raw-forest-honey" : `/${locale}/products/raw-forest-honey`}
+                 href={locale === 'en' ? "/products/bee-pollen" : `/${locale}/products/bee-pollen`}
                  className="inline-block px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
                >
                  {getDashboardTranslation(locale, "dashboard.viewProduct")}

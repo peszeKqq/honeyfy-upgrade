@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 export default function WholesalePage() {
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent("Hi! I'm interested in wholesale honey for my business. Can you provide more information about your wholesale program?");
-    const whatsappUrl = `https://wa.me/31612345678?text=${message}`;
+    const whatsappUrl = `https://wa.me/31685713773?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 

@@ -133,7 +133,7 @@ export default function CartSidebar({ locale = 'en' }: CartSidebarProps) {
                                 alt={productName}
                                 width={80}
                                 height={80}
-                                className="w-full h-full object-contain p-2"
+                                className="w-full h-full object-contain p-2 w-auto h-auto"
                                 onError={() => handleImageError(item.product.id)}
                                 priority={false}
                               />

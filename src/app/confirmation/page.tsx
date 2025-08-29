@@ -288,7 +288,7 @@ export default function ConfirmationPage() {
             </p>
             <div className="space-y-2 text-sm">
               <p className="text-gray-600">📧 Email: support@honeyfy.com</p>
-              <p className="text-gray-600">📞 Phone: +31 6 12345678</p>
+                              <p className="text-gray-600">📞 Phone: +31 685 713 773</p>
               <p className="text-gray-600">🕒 Support Hours: Mon-Fri 9:00 AM - 6:00 PM CET</p>
             </div>
           </div>

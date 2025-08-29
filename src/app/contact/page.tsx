@@ -343,7 +343,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Call Us</h3>
-                    <p className="text-gray-600">+1 (555) 123-4567<br />Mon-Fri 9AM-6PM</p>
+                    <p className="text-gray-600">+31 685 713 773<br />Mon-Fri 9AM-6PM</p>
                   </div>
                 </div>
               </motion.div>
@@ -404,16 +404,36 @@ export default function ContactPage() {
             >
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Follow Our Journey</h3>
               <div className="flex space-x-4">
-                {['📘', '📷', '🐦', '📺'].map((icon, index) => (
-                  <motion.button
-                    key={index}
-                    className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center text-xl hover:bg-yellow-200 transition-colors"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    {icon}
-                  </motion.button>
-                ))}
+                <motion.a
+                  href="https://www.facebook.com/profile.php?id=100090174670745"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center hover:bg-yellow-200 transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <img src="/facebook-svgrepo-com.svg" alt="Facebook" className="w-6 h-6" />
+                </motion.a>
+                <motion.a
+                  href="https://www.instagram.com/honeyfy.online/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center hover:bg-yellow-200 transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <img src="/instagram-color-svgrepo-com.svg" alt="Instagram" className="w-6 h-6" />
+                </motion.a>
+                <motion.a
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center hover:bg-yellow-200 transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <img src="/tiktok-icon-black-1-logo-svgrepo-com.svg" alt="TikTok" className="w-6 h-6" />
+                </motion.a>
               </div>
             </motion.div>
           </motion.div>

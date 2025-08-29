@@ -6,10 +6,21 @@ import { updateProfile, updatePassword, updateEmail, EmailAuthProvider, reauthen
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getProfileTranslation } from '@/lib/profileTranslations';
+import { usePathname } from 'next/navigation';
 
 export default function ProfilePage() {
   const { state } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Detect locale from pathname
+  const detectLocale = () => {
+    const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+    return localeMatch ? localeMatch[1] : 'en';
+  };
+  
+  const locale = detectLocale();
   
   // Form states
   const [isEditing, setIsEditing] = useState(false);
@@ -50,9 +61,14 @@ export default function ProfilePage() {
 
 
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (only after loading is complete)
   useEffect(() => {
-    if (!state.isLoading && !state.isAuthenticated) {
+    if (state.isLoading) {
+      // Still loading, don't redirect yet
+      return;
+    }
+    
+    if (!state.isAuthenticated) {
       router.push('/auth/login');
     }
   }, [state.isAuthenticated, state.isLoading, router]);
@@ -104,7 +120,7 @@ export default function ProfilePage() {
         await updateEmail(auth.currentUser, profileData.email);
       }
 
-      setSuccess('Profile updated successfully!');
+      setSuccess(getProfileTranslation(locale, 'profileUpdatedSuccessfully'));
       setIsEditing(false);
       
       // Refresh the page to get updated user data
@@ -119,7 +135,7 @@ export default function ProfilePage() {
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else {
-        setError(err.message || 'Failed to update profile. Please try again.');
+        setError(err.message || getProfileTranslation(locale, 'failedToUpdateProfile'));
       }
     } finally {
       setLoading(false);
@@ -145,7 +161,7 @@ export default function ProfilePage() {
       // Save address to localStorage
       localStorage.setItem(`honeyfy-address-${state.user.id}`, JSON.stringify(addressData));
       
-      setSuccess('Shipping address updated successfully!');
+      setSuccess(getProfileTranslation(locale, 'addressUpdatedSuccessfully'));
       setIsEditingAddress(false);
     } catch (err: any) {
       console.error('Address update error:', err);
@@ -159,10 +175,10 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!auth?.currentUser) return;
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match.');
-      return;
-    }
+          if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setError(getProfileTranslation(locale, 'passwordsDoNotMatch'));
+        return;
+      }
 
     if (passwordData.newPassword.length < 6) {
       setError('New password must be at least 6 characters long.');
@@ -183,7 +199,7 @@ export default function ProfilePage() {
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updatePassword(auth.currentUser, passwordData.newPassword);
 
-      setSuccess('Password updated successfully!');
+      setSuccess(getProfileTranslation(locale, 'passwordChangedSuccessfully'));
       setShowPasswordForm(false);
       setPasswordData({
         currentPassword: '',
@@ -194,11 +210,11 @@ export default function ProfilePage() {
       console.error('Password change error:', err);
       
       if (err.code === 'auth/wrong-password') {
-        setError('Current password is incorrect.');
+        setError(getProfileTranslation(locale, 'currentPasswordIncorrect'));
       } else if (err.code === 'auth/weak-password') {
         setError('New password is too weak. Please choose a stronger password.');
       } else {
-        setError(err.message || 'Failed to change password. Please try again.');
+        setError(err.message || getProfileTranslation(locale, 'failedToChangePassword'));
       }
     } finally {
       setLoading(false);
@@ -210,7 +226,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{getProfileTranslation(locale, 'loading')}</p>
         </div>
       </div>
     );
@@ -233,18 +249,18 @@ export default function ProfilePage() {
                 </span>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 font-heading">My Profile</h1>
-                <p className="text-gray-600 font-body">Manage your account settings and preferences</p>
+                <h1 className="text-3xl font-bold text-gray-900 font-heading">{getProfileTranslation(locale, 'myProfile')}</h1>
+                <p className="text-gray-600 font-body">{getProfileTranslation(locale, 'manageAccount')}</p>
               </div>
             </div>
             <Link
-              href="/dashboard"
+              href={locale === 'en' ? "/dashboard" : `/${locale}/dashboard`}
               className="text-yellow-600 hover:text-yellow-700 font-medium flex items-center space-x-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span>Back to Dashboard</span>
+              <span>{getProfileTranslation(locale, 'backToDashboard')}</span>
             </Link>
           </div>
 
@@ -266,7 +282,7 @@ export default function ProfilePage() {
           {/* Profile Information */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 font-heading">Profile Information</h2>
+              <h2 className="text-xl font-bold text-gray-900 font-heading">{getProfileTranslation(locale, 'profileInformation')}</h2>
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
@@ -275,7 +291,7 @@ export default function ProfilePage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                  <span>Edit</span>
+                  <span>{getProfileTranslation(locale, 'edit')}</span>
                 </button>
               )}
             </div>
@@ -284,7 +300,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div>
                   <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
+                    {getProfileTranslation(locale, 'fullName')}
                   </label>
                   <input
                     id="displayName"
@@ -293,13 +309,13 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:bg-gray-50 disabled:text-gray-500"
-                    placeholder="Enter your full name"
+                    placeholder={getProfileTranslation(locale, 'enterFullName')}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
+                    {getProfileTranslation(locale, 'emailAddress')}
                   </label>
                   <input
                     id="email"
@@ -308,7 +324,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:bg-gray-50 disabled:text-gray-500"
-                    placeholder="Enter your email"
+                    placeholder={getProfileTranslation(locale, 'enterEmail')}
                   />
                 </div>
 
@@ -324,10 +340,10 @@ export default function ProfilePage() {
                       {loading ? (
                         <div className="flex items-center justify-center">
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Saving...
+                          {getProfileTranslation(locale, 'saving')}
                         </div>
                       ) : (
-                        'Save Changes'
+                        getProfileTranslation(locale, 'saveChanges')
                       )}
                     </button>
                     <button
@@ -346,7 +362,7 @@ export default function ProfilePage() {
                       }}
                       className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
                     >
-                      Cancel
+                      {getProfileTranslation(locale, 'cancel')}
                     </button>
                   </div>
                 )}
@@ -357,7 +373,7 @@ export default function ProfilePage() {
           {/* Shipping Address */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Shipping Address</h2>
+              <h2 className="text-xl font-bold text-gray-900">{getProfileTranslation(locale, 'shippingAddress')}</h2>
               {!isEditingAddress && (
                 <button
                   onClick={() => setIsEditingAddress(true)}
@@ -366,7 +382,7 @@ export default function ProfilePage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                  <span>Edit</span>
+                  <span>{getProfileTranslation(locale, 'edit')}</span>
                 </button>
               )}
             </div>

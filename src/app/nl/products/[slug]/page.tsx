@@ -192,7 +192,7 @@ export default function ProductDetailPage() {
                             alt={`${product.name} - ${index === 1 ? 'Hoofdbeeld' : 'Alternatief beeld'}`}
                             width={80}
                             height={80}
-                            className="object-contain"
+                            className="object-contain w-auto h-auto"
                             quality={75}
                           />
                         </div>

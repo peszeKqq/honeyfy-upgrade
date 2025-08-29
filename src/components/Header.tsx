@@ -171,7 +171,7 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
                     alt="Honeyfy Logo"
                     width={150}
                     height={40}
-                    className="cursor-pointer object-contain"
+                    className="cursor-pointer object-contain w-auto h-auto"
                     priority
                     quality={100}
                   />
@@ -232,12 +232,15 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
               </nav>
 
               {/* Right side icons */}
-              <div className="flex items-center space-x-4 flex-shrink-0">
-                {/* Debug: Show current locale */}
-                <span className="text-xs text-yellow-400 bg-black/20 px-2 py-1 rounded">
+              <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                {/* Debug: Show current locale - hidden on mobile */}
+                <span className="hidden sm:block text-xs text-yellow-400 bg-black/20 px-2 py-1 rounded">
                   {currentLocale}
                 </span>
-                {isMounted && <LanguageSwitcher />}
+                {/* Language switcher - hidden on mobile, will be in mobile menu */}
+                <div className="hidden lg:block">
+                  {isMounted && <LanguageSwitcher />}
+                </div>
                 {isMounted && <CartIcon />}
                 {isMounted && <UserMenu />}
                 
@@ -264,6 +267,12 @@ export default function Header({ bannerVisible = false }: HeaderProps) {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="py-4 space-y-4">
+                    {/* Language Switcher in mobile menu */}
+                    <div className="flex items-center justify-center pb-4 border-b border-gray-200">
+                      <span className="text-white text-sm mr-3">Language:</span>
+                      {isMounted && <LanguageSwitcher />}
+                    </div>
+                    
                     <Link 
                       href={getLocalizedLink('/')} 
                       className="block text-white hover:text-yellow-400 transition-colors duration-200 font-medium"

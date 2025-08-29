@@ -116,7 +116,7 @@ export default function PolishPrivacyPolicyPage() {
                   <p className="text-gray-700">
                     <strong>E-mail:</strong> privacy@honeyfy.com<br />
                     <strong>Adres:</strong> Honeyfy, Holandia<br />
-                    <strong>Telefon:</strong> +31 (0) 123 456 789
+                    <strong>Telefon:</strong> +31 685 713 773
                   </p>
                 </div>
               </section>

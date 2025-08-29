@@ -72,8 +72,8 @@ export default function ProductCard({ product, locale = 'en' }: ProductCardProps
                alt={product.name}
                width={400}
                height={300}
-               className="w-full h-full object-contain p-4 scale-80"
-               style={{ transform: 'scale(0.8)' }}
+               className="w-full h-full object-contain p-4 w-auto h-auto"
+               style={{ transform: 'scale(0.85)' }}
                onError={() => setImageError(true)}
                priority={false}
              />

@@ -9,6 +9,9 @@ import { blogPosts } from '@/data/blog-posts';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import StructuredData from '@/components/StructuredData';
 import { generateBlogMetaTags, generateBreadcrumbStructuredData } from '@/lib/seo';
+import { getBlogTranslation } from '@/lib/blogTranslations';
+import { usePathname } from 'next/navigation';
+import Comments from '@/components/Comments';
 
 interface BlogPost {
   id: string;
@@ -29,9 +32,18 @@ interface BlogPost {
 export default function BlogPostPage() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Detect locale from pathname
+  const detectLocale = () => {
+    const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+    return localeMatch ? localeMatch[1] : 'en';
+  };
+
+  const locale = detectLocale();
 
   useEffect(() => {
     const slug = params.slug as string;
@@ -45,18 +57,30 @@ export default function BlogPostPage() {
         .slice(0, 3);
       setRelatedPosts(related);
     } else {
-      router.push('/blog');
+      router.push(locale === 'en' ? '/blog' : `/${locale}/blog`);
     }
     setLoading(false);
-  }, [params.slug, router]);
+  }, [params.slug, router, locale]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'nl' ? 'nl-NL' : 'pl-PL', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // Get translated content for blog posts
+  const getTranslatedContent = (post: BlogPost) => {
+    switch (post.slug) {
+      case 'pure-polish-honey-southern-poland-finest':
+        return getBlogTranslation(locale, 'purePolishHoneyContent');
+      case 'heather-honey-rare-treasure-polish-highlands':
+        return getBlogTranslation(locale, 'heatherHoneyContent');
+      default:
+        return post.content; // For now, return original content for other posts
+    }
   };
 
   if (loading) {
@@ -65,7 +89,7 @@ export default function BlogPostPage() {
         <div className="container mx-auto px-4">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading blog post...</p>
+            <p className="text-gray-600">{getBlogTranslation(locale, 'loadingBlogPost')}</p>
           </div>
         </div>
       </div>
@@ -78,8 +102,8 @@ export default function BlogPostPage() {
 
   // Generate breadcrumb structured data
   const breadcrumbData = generateBreadcrumbStructuredData([
-    { name: 'Home', url: 'https://honeyfy.nl' },
-    { name: 'Blog', url: 'https://honeyfy.nl/blog' },
+    { name: getBlogTranslation(locale, 'home'), url: 'https://honeyfy.nl' },
+    { name: getBlogTranslation(locale, 'blog'), url: 'https://honeyfy.nl/blog' },
     { name: post.title, url: `https://honeyfy.nl/blog/${post.slug}` }
   ]);
 
@@ -98,14 +122,14 @@ export default function BlogPostPage() {
         >
           <ol className="flex items-center space-x-2 text-sm text-gray-600">
             <li>
-              <Link href="/" className="hover:text-yellow-600 transition-colors">
-                Home
+              <Link href={locale === 'en' ? "/" : `/${locale}`} className="hover:text-yellow-600 transition-colors">
+                {getBlogTranslation(locale, 'home')}
               </Link>
             </li>
             <li>/</li>
             <li>
-              <Link href="/blog" className="hover:text-yellow-600 transition-colors">
-                Blog
+              <Link href={locale === 'en' ? "/blog" : `/${locale}/blog`} className="hover:text-yellow-600 transition-colors">
+                {getBlogTranslation(locale, 'blog')}
               </Link>
             </li>
             <li>/</li>
@@ -141,7 +165,7 @@ export default function BlogPostPage() {
               <div className="flex items-center space-x-6 text-gray-600 mb-8">
                 <div className="flex items-center space-x-2">
                   <span className="text-yellow-600">👤</span>
-                  <span>By {post.author}</span>
+                  <span>{getBlogTranslation(locale, 'by')} {post.author}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-yellow-600">📅</span>
@@ -149,7 +173,7 @@ export default function BlogPostPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-yellow-600">⏱️</span>
-                  <span>{post.readTime} min read</span>
+                  <span>{post.readTime} {getBlogTranslation(locale, 'minRead')}</span>
                 </div>
               </div>
             </div>
@@ -160,8 +184,8 @@ export default function BlogPostPage() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-8xl mb-4">🍯</div>
-                    <div className="text-yellow-600 text-lg font-medium font-heading">Honeyfy Blog</div>
-                    <div className="text-yellow-500 text-sm font-body">Sweet Stories</div>
+                    <div className="text-yellow-600 text-lg font-medium font-heading">{getBlogTranslation(locale, 'honeyfyBlog')}</div>
+                    <div className="text-yellow-500 text-sm font-body">{getBlogTranslation(locale, 'sweetStories')}</div>
                   </div>
                 </div>
               </div>
@@ -170,27 +194,30 @@ export default function BlogPostPage() {
             {/* Article Content */}
             <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
               <div 
-                className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:font-body prose-strong:text-yellow-600 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-yellow-600 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700"
+                dangerouslySetInnerHTML={{ __html: getTranslatedContent(post) }}
               />
             </div>
+
+            {/* Comments Section */}
+            <Comments locale={locale} postSlug={post.slug} />
 
             {/* Article Footer */}
             <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
               <div className="border-t border-gray-200 pt-8">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">About the Author</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{getBlogTranslation(locale, 'aboutAuthor')}</h3>
                     <p className="text-gray-600">{post.author}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">Published on {formatDate(post.publishedAt)}</p>
-                    <p className="text-sm text-gray-500">{post.readTime} minute read</p>
+                    <p className="text-sm text-gray-500">{getBlogTranslation(locale, 'publishedOn')} {formatDate(post.publishedAt)}</p>
+                    <p className="text-sm text-gray-500">{post.readTime} {getBlogTranslation(locale, 'minuteRead')}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600">Share this article:</span>
+                  <span className="text-sm text-gray-600">{getBlogTranslation(locale, 'shareArticle')}:</span>
                   <button className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
@@ -215,7 +242,7 @@ export default function BlogPostPage() {
               className="mb-16"
             >
               <div className="max-w-4xl mx-auto">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center font-heading">Related Articles</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center font-heading">{getBlogTranslation(locale, 'relatedArticles')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {relatedPosts.map((relatedPost, index) => (
                     <motion.article
@@ -225,7 +252,7 @@ export default function BlogPostPage() {
                       transition={{ delay: 0.4 + index * 0.1 }}
                       className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
                     >
-                      <Link href={`/blog/${relatedPost.slug}`} className="block">
+                      <Link href={locale === 'en' ? `/blog/${relatedPost.slug}` : `/${locale}/blog/${relatedPost.slug}`} className="block">
                         <div className="h-32 bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center">
                           <div className="text-3xl group-hover:scale-110 transition-transform duration-300">🍯</div>
                         </div>
@@ -252,12 +279,12 @@ export default function BlogPostPage() {
                         </p>
                         
                         <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{relatedPost.readTime} min read</span>
+                          <span>{relatedPost.readTime} {getBlogTranslation(locale, 'minRead')}</span>
                           <Link
-                            href={`/blog/${relatedPost.slug}`}
+                            href={locale === 'en' ? `/blog/${relatedPost.slug}` : `/${locale}/blog/${relatedPost.slug}`}
                             className="text-yellow-600 hover:text-yellow-700 font-semibold"
                           >
-                            Read More →
+                            {getBlogTranslation(locale, 'readMore')} →
                           </Link>
                         </div>
                       </div>
@@ -286,11 +313,11 @@ export default function BlogPostPage() {
             transition={{ delay: 0.6 }}
           >
             <Link
-              href="/blog"
+              href={locale === 'en' ? "/blog" : `/${locale}/blog`}
               className="inline-flex items-center space-x-2 bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               <span>←</span>
-              <span>Back to Blog</span>
+              <span>{getBlogTranslation(locale, 'backToBlog')}</span>
             </Link>
           </motion.div>
         </div>

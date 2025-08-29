@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
-import { auth, googleProvider, facebookProvider } from '@/lib/firebase';
+import { auth, googleProvider } from '@/lib/firebase';
+import { getAuthTranslation } from '@/lib/authTranslations';
+import { usePathname } from 'next/navigation';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +15,15 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Detect locale from pathname
+  const detectLocale = () => {
+    const localeMatch = pathname.match(/^\/(nl|pl)(\/.*)?$/);
+    return localeMatch ? localeMatch[1] : 'en';
+  };
+  
+  const locale = detectLocale();
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +32,7 @@ export default function SignUpPage() {
 
     try {
       if (!auth) {
-        setError('Firebase authentication is not configured. Please check your Firebase setup.');
+        setError(getAuthTranslation(locale, 'firebaseNotConfigured'));
         return;
       }
       
@@ -40,18 +51,18 @@ export default function SignUpPage() {
       console.error('Signup error:', err);
       
       // Provide more specific error messages
-      let errorMessage = 'Signup failed. Please try again.';
+      let errorMessage = getAuthTranslation(locale, 'signupFailed');
       
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Try logging in instead.';
+        errorMessage = getAuthTranslation(locale, 'emailAlreadyInUse');
       } else if (err.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak. Please use at least 6 characters.';
+        errorMessage = getAuthTranslation(locale, 'weakPassword');
       } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address.';
+        errorMessage = getAuthTranslation(locale, 'invalidEmail');
       } else if (err.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid credentials. Please check your Firebase project configuration.';
+        errorMessage = getAuthTranslation(locale, 'invalidCredential');
       } else if (err.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase authentication is not properly configured. Please check your project settings.';
+        errorMessage = getAuthTranslation(locale, 'configurationNotFound');
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -76,19 +87,7 @@ export default function SignUpPage() {
     }
   };
 
-  const handleFacebookSignUp = async () => {
-    setLoading(true);
-    setError(null);
 
-    try {
-      await signInWithPopup(auth, facebookProvider);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center py-12 px-4">
@@ -100,10 +99,10 @@ export default function SignUpPage() {
             <span className="text-2xl font-bold text-gray-900">Honeyfy</span>
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mb-2 font-heading">
-            Join Honeyfy! 🍯
+            {getAuthTranslation(locale, 'joinHoneyfy')}
           </h2>
           <p className="text-gray-600 font-body">
-            Create your account and start your sweet journey with premium honey
+            {getAuthTranslation(locale, 'joinSubtitle')}
           </p>
         </div>
 
@@ -116,16 +115,16 @@ export default function SignUpPage() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 text-gray-500">Or continue with</span>
+              <span className="px-2 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 text-gray-500">{getAuthTranslation(locale, 'orContinueWith')}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex justify-center">
             {/* Google Sign Up */}
             <button
               onClick={handleGoogleSignUp}
               disabled={loading}
-              className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:opacity-50"
+              className="w-full max-w-xs flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:opacity-50"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -134,18 +133,6 @@ export default function SignUpPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
               Google
-            </button>
-
-            {/* Facebook Sign Up */}
-            <button
-              onClick={handleFacebookSignUp}
-              disabled={loading}
-              className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:opacity-50"
-            >
-              <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              Facebook
             </button>
           </div>
         </div>
@@ -156,7 +143,7 @@ export default function SignUpPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 text-gray-500">Or sign up with email</span>
+            <span className="px-2 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 text-gray-500">{getAuthTranslation(locale, 'orSignUpWithEmail')}</span>
           </div>
         </div>
 
@@ -164,7 +151,7 @@ export default function SignUpPage() {
         <form onSubmit={handleEmailSignUp} className="space-y-6">
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              {getAuthTranslation(locale, 'fullName')}
             </label>
             <input
               id="fullName"
@@ -173,13 +160,13 @@ export default function SignUpPage() {
               onChange={(e) => setFullName(e.target.value)}
               required
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900"
-              placeholder="Enter your full name"
+              placeholder={getAuthTranslation(locale, 'enterFullName')}
             />
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              {getAuthTranslation(locale, 'emailAddress')}
             </label>
             <input
               id="email"
@@ -188,13 +175,13 @@ export default function SignUpPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900"
-              placeholder="Enter your email"
+              placeholder={getAuthTranslation(locale, 'enterEmail')}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              {getAuthTranslation(locale, 'password')}
             </label>
             <input
               id="password"
@@ -204,7 +191,7 @@ export default function SignUpPage() {
               required
               minLength={6}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900"
-              placeholder="Enter password (min. 6 characters)"
+              placeholder={getAuthTranslation(locale, 'enterPasswordMin')}
             />
           </div>
 
@@ -225,43 +212,37 @@ export default function SignUpPage() {
                 Creating account...
               </div>
             ) : (
-              'Create Account with Email 🍯'
+              getAuthTranslation(locale, 'createAccountWithEmail')
             )}
           </button>
         </form>
 
         {/* Terms */}
         <p className="text-xs text-gray-500 text-center">
-          By creating an account, you agree to our{' '}
-          <Link href="/terms" className="text-yellow-600 hover:text-yellow-700">
-            Terms of Service
+          {getAuthTranslation(locale, 'termsAgreement')}{' '}
+          <Link href={locale === 'en' ? "/terms-of-service" : `/${locale}/terms-of-service`} className="text-yellow-600 hover:text-yellow-700">
+            {getAuthTranslation(locale, 'termsOfService')}
           </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="text-yellow-600 hover:text-yellow-700">
-            Privacy Policy
+          {getAuthTranslation(locale, 'and')}{' '}
+          <Link href={locale === 'en' ? "/privacy-policy" : `/${locale}/privacy-policy`} className="text-yellow-600 hover:text-yellow-700">
+            {getAuthTranslation(locale, 'privacyPolicy')}
           </Link>
         </p>
 
         {/* Sign In Link */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
+            {getAuthTranslation(locale, 'alreadyHaveAccount')}{' '}
             <Link
-              href="/auth/login"
+              href={locale === 'en' ? "/auth/login" : `/${locale}/auth/login`}
               className="text-yellow-600 hover:text-yellow-700 font-medium"
             >
-              Sign in here
+              {getAuthTranslation(locale, 'signInHere')}
             </Link>
           </p>
         </div>
 
-        {/* Firebase Setup Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-sm font-bold text-blue-800 mb-2">🔧 Firebase Setup Required:</h4>
-          <p className="text-sm text-blue-700">
-            To use authentication, please follow the instructions in <code>FIREBASE_SETUP.md</code> and add your Firebase keys to <code>.env.local</code>
-          </p>
-        </div>
+
       </div>
     </div>
   );

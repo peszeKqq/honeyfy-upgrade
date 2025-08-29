@@ -556,7 +556,7 @@ export default function ProductDetailPage() {
                           alt={`${product.name} - ${index === 1 ? 'Main view' : 'Alternative view'} of premium Polish honey`}
                           width={80}
                           height={80}
-                          className="object-contain"
+                          className="object-contain w-auto h-auto"
                           quality={75}
                         />
                       </div>

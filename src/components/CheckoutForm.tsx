@@ -223,7 +223,7 @@ export default function CheckoutForm({ onSubmit, isLoading }: CheckoutFormProps)
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-black ${
                 errors.phone ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="+31 6 12345678"
+                                  placeholder="+31 685 713 773"
             />
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1">{errors.phone}</p>

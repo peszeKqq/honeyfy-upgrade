@@ -8,7 +8,7 @@ import HreflangTagsServer from '@/components/HreflangTagsServer';
 export default function PolishWholesalePage() {
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent("Cześć! Jestem zainteresowany hurtowym miodem dla mojego biznesu. Czy możesz podać więcej informacji o waszym programie hurtowym?");
-    const whatsappUrl = `https://wa.me/31612345678?text=${message}`;
+    const whatsappUrl = `https://wa.me/31685713773?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 

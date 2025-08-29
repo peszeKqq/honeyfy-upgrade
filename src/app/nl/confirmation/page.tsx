@@ -261,7 +261,7 @@ export default function ConfirmationPage() {
           </p>
           <div className="space-y-2 text-sm">
             <p className="text-gray-600">📧 E-mail: support@honeyfy.com</p>
-            <p className="text-gray-600">📞 Telefoon: +31 6 12345678</p>
+                            <p className="text-gray-600">📞 Telefoon: +31 685 713 773</p>
             <p className="text-gray-600">🕒 Ondersteuning: Ma-Vr 9:00 - 18:00 CET</p>
           </div>
         </div>
